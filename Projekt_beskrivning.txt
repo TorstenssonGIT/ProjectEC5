@@ -1,0 +1,150 @@
+Examinerande uppgift –
+Pythonprogrammering med AI
+Sebastian Öhamn
+19 oktober 2025
+Bakgrund
+Denna uppgift utgör kursens examinerande moment och syftar till att låta dig tillämpa
+de kunskaper och färdigheter du utvecklat under kursen Pythonprogrammering med AI.
+Du ska självständigt utveckla en AI-applikation i Python som använder ett dataset för
+att träna en maskininlärningsmodell, som därefter används i en terminalbaserad, Tkintereller
+Streamlit-applikation.
+Uppgiftens syfte
+Målet är att du ska visa att du kan:
+• Använda Python och relevanta AI-bibliotek för databehandling, visualisering och
+maskininlärning.
+• Planera och genomföra ett AI-projekt med en tydlig kodstruktur och objektorienterade
+principer.
+• Självständigt utveckla en fungerande AI-applikation med ett verkligt dataset.
+• Reflektera kring etiska aspekter i användningen av AI och data.
+Projektbeskrivning
+Du ska skapa en applikation som analyserar och tränar en maskininlärningsmodell på ett
+dataset. Projektet ska bestå av följande delar:
+1. Databehandling och analys
+• Läs in och analysera ett dataset (för G: Heart Disease Dataset).
+• Utför datarensning (hantera saknade värden, felaktiga typer, m.m.).
+• Utför en enkel exploratory data analysis (EDA) – t.ex. med hjälp av matplotlib
+eller seaborn.
+1
+2. Modellering
+• Dela upp datasetet i tränings- och testdata.
+• Träna en maskininlärningsmodell (för G: välj mellan Logistic Regression, Random
+Forest eller XGBoost).
+• Utvärdera modellen (t.ex. med accuracy, confusion matrix, eller classification
+report).
+• För VG: inkludera minst en ytterligare utvärderingsmetod (t.ex. ROC/AUC, F1-
+score, precision/recall, eller feature importance).
+3. Applikation
+• Skapa en applikation som använder den tränade modellen för att göra prediktioner.
+• Applikationen får vara:
+– Terminalbaserad (exempelvis via meny och inmatning),
+– Byggd i Tkinter, eller
+– Byggd i Streamlit.
+• Applikationen ska tydligt visa modellens resultat och prediktioner.
+4. Objektorienterad programmering och struktur
+Projektet ska använda objektorienterade principer:
+• Minst en klass ska användas, exempelvis DataProcessor, ModelTrainer eller AppInterface.
+• Koden ska vara uppdelad i moduler enligt en tydlig struktur, exempelvis:
+project/
+data/
+heart.csv
+src/
+data_processing.py
+model_training.py
+app.py
+utils.py
+main.py
+notebooks/
+analysis.ipynb
+requirements.txt
+README.md
+report.pdf
+2
+5. Dokumentation och versionshantering
+• Koden ska vara väldokumenterad med kommentarer och docstrings.
+• Projektet bör versionshanteras med Git och delas via GitHub.
+• README.md ska beskriva hur projektet körs, dess syfte och beroenden.
+6. Etisk reflektion
+En kort reflektion (ca 150–200 ord) ska ingå i rapporten. Den ska behandla:
+• Eventuella etiska problem i det valda datasetet (t.ex. bias, integritet, datakvalitet).
+• Hur AI-modellen kan påverka individer eller samhället.
+Rapport
+Projektet ska kompletteras med en kort rapport (1–2 sidor) som innehåller:
+• Beskrivning av datasetet (källa och innehåll).
+• Förklaring av vald modell och varför den valdes.
+• Kortfattad presentation av resultat (t.ex. tabell, diagram eller nyckelvärden).
+• Den etiska reflektionen (se ovan).
+Betygskriterier
+För betyget Godkänt (G)
+• Ett fungerande AI-projekt som använder det givna Heart Disease Dataset.
+• Databehandling, analys och modellering genomförd.
+• En maskininlärningsmodell (Logistic Regression, Random Forest eller XGBoost)
+tränad och utvärderad.
+• En fungerande applikation (terminal, Tkinter eller Streamlit).
+• Minst en klass och tydlig projektstruktur.
+• Rapport med kort etisk reflektion inkluderad.
+• |Projektet bör versionshanteras i Git och publicerat på GitHub (privat).|
+3
+För betyget Väl Godkänt (VG)
+• Samtliga krav för G uppfyllda med modifikation nedan.
+• Studenten har själv valt dataset, definierat problemställning och valt lämplig MLmodell.
+• Applikationen visar på kreativitet och fördjupad förståelse (t.ex. mer avancerad
+visualisering, hyperparameter-tuning, feature engineering, eller ett mer interaktivt
+gränssnitt).
+• Rapporten innehåller motivering till modellval, jämförelse mellan minst två modeller
+och en tydlig diskussion om resultat.
+• Den etiska reflektionen är nyanserad och väl motiverad.
+• Koden uppvisar god struktur, dokumentation och följer PEP8-standard.
+Inlämning
+Inlämning sker via lärplattformen (Omniway) och:
+• Om ni ANVÄNDER git+github:
+– Ni skriver länken till ert repo som innehåller projektet i det angivna fältet
+– Ni bjuder in mig med hjälp av antingen
+1. sebastianmentor
+2. sebastian.ohman@systementor.se
+– Rapporten i PDF-format.
+• Om ni INTE använder git+github
+– En zip-fil med hela projektmappen.
+– Kom ihåg att exkludera virtuella miljöer och cache-data och annat...
+– Rapporten i PDF-format.
+Bedömning och examination
+Examination sker individuellt. Projektet bedöms utifrån kursens lärandemål och följande
+kriterier:
+4
+Nr Lärandemål Kriterier för VG Examination
+1 Redogöra för syntax, semantik
+och standardbibliotek
+i Python samt grundläggande
+AI-koncept
+Redogör tydligt för valda
+bibliotek och deras användning
+A (Projekt)
+2 Beskriva ML-algoritmer
+och etiska aspekter av
+AI-tillämpningar
+Inkluderar teoretisk modellbeskrivning
+och etisk reflektion
+A (Projekt)
+3 Tillämpa OOP och utvecklingsverktyg
+för AI-projekt
+Koden visar tydlig OOPstruktur
+och använder Git
+effektivt
+A (Projekt)
+4 Använda AI-bibliotek för
+databehandling, datavisualisering
+och ML
+Fördjupad analys och modelljämförelse
+A (Projekt)
+5 Självständigt utveckla och
+implementera AI-lösningar i
+Python
+Kreativ och självständig
+implementation, motiverade
+val
+A (Projekt)
+Tips
+• Använd pandas, numpy, matplotlib, seaborn, scikit-learn och eventuellt xgboost.
+• Dokumentera din kod och visa arbetsprocessen tydligt.
+• Använd virtualenv eller conda för att hantera miljön.
+• Lägg tid på att strukturera ditt Git-repo och dina commits.
+5
