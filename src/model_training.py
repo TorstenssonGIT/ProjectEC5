@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import (
     accuracy_score,
     classification_report,
@@ -61,6 +62,17 @@ class ModelTrainer:
                             n_estimators=200,
                             random_state=self.random_state,
                             n_jobs=-1,
+                        ),
+                    )
+                ]
+            ),
+            "Decision Tree": Pipeline(
+                [
+                    (
+                        "model",
+                        DecisionTreeClassifier(
+                            random_state=self.random_state,
+                            max_depth=10,
                         ),
                     )
                 ]
