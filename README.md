@@ -106,8 +106,9 @@ Both models are evaluated on a 20% held-out test split (stratified, `random_stat
 |---------------------|----------|-------|-----------|--------|---------|
 | Logistic Regression | 0.869    | 0.877 | 0.861     | 0.893  | 0.935   |
 | Random Forest       | 0.885    | 0.893 | 0.878     | 0.909  | 0.955   |
+| Decision Tree       | 0.754    | 0.771 | 0.750     | 0.793  | 0.754   |
 
-Random Forest was selected as the primary model based on higher accuracy and ROC AUC.
+Random Forest was selected as the primary model based on highest accuracy and ROC AUC. Decision Tree is included to demonstrate the value of ensembling — Random Forest's accuracy is notably higher despite being built from the same base learner.
 
 > Exact values may vary slightly between runs despite the fixed seed, depending on scikit-learn version.
 
