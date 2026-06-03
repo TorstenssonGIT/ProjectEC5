@@ -166,9 +166,16 @@ To run the same checks locally:
 ```bash
 pytest tests/ --cov=src --cov-report=term-missing --cov-fail-under=84
 ```
+## Ethical Considerations
+
+This project uses the UCI Heart Disease dataset which has known demographic bias — the majority of patients are middle-aged men. The models may perform worse for underrepresented groups such as women and elderly patients.
+
+The predictions are for **educational purposes only** and must not be used as a substitute for medical diagnosis. Always consult a healthcare professional.
+
+A full ethical reflection is included in `report.pdf`.
 
 ## Notes
-
+- Code style checked with `flake8 src/ --max-line-length=100` — no issues.
 - `notebooks/analysis.ipynb` is the single entry point — it documents all steps including EDA, training, evaluation, terminal app, Streamlit, ethical reflection, and CI/CD.
 - The terminal app (`src/terminal_app.py`) uses the trained Random Forest model for interactive predictions.
 - The Streamlit app (`app.py`) uses a dark theme configured in `.streamlit/config.toml`.

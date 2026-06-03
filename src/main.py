@@ -44,7 +44,7 @@ def save_model_pipelines(trainer: ModelTrainer) -> None:
 def train_and_save(data_path: str, output_path: str) -> None:
     """
     Executes the standard training workflow:
-    1. Load/Clean data -> 2. Split data -> 3. Train models -> 
+    1. Load/Clean data -> 2. Split data -> 3. Train models ->
     4. Evaluate performance -> 5. Persist models and metrics.
     """
     processor = DataProcessor(data_path)
@@ -158,10 +158,7 @@ def configure_arg_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
-    """
-    Entry point for the CLI. 
-    Dispatches the workflow based on user flags.
-    """
+    """Entry point for the CLI. Dispatches the workflow based on user flags."""
     parser = configure_arg_parser()
     args = parser.parse_args()
 

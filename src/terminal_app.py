@@ -7,23 +7,20 @@ from typing import List, Tuple
 
 @dataclass
 class FeatureInfo:
-    """
-    Metadata for a patient feature used in the terminal application.
-    """
+    """Metadata for a patient feature used in the terminal application."""
+
     name: str
     description: str
     data_type: str
 
 
 class HeartApp:
-    """
-    Interactive Terminal application that loads a trained model 
+    """Interactive terminal application that loads a trained model
     to predict heart disease risk based on user input.
     """
 
     def __init__(self, model_path: str) -> None:
         self.model_path = model_path
-        # Load the pre-trained model (joblib format)
         self.model = load(self.model_path)
         self.features: List[FeatureInfo] = [
             FeatureInfo("age", "Age in years", "int"),
@@ -37,8 +34,8 @@ class HeartApp:
             FeatureInfo("exang", "Exercise induced angina (1 = yes, 0 = no)", "int"),
             FeatureInfo("oldpeak", "ST depression induced by exercise", "float"),
             FeatureInfo("slope", "Slope of peak exercise ST segment (0-2)", "int"),
-            FeatureInfo("ca", "Number of major vessels colored by fluoroscopy (0-4)", "int"),
-            FeatureInfo("thal", "Thalassemia (3 = normal, 6 = fixed defect, 7 = reversible defect)", "int"),
+            FeatureInfo("ca", "Number of major vessels (0-4)", "int"),
+            FeatureInfo("thal", "Thalassemia (3 = normal, 6 = fixed, 7 = reversible)", "int"),
         ]
 
     def prompt_for_inputs(self) -> List[float]:
@@ -67,13 +64,9 @@ class HeartApp:
         print("Please provide patient data below for risk assessment.\n")
 
         while True:
-            # Step 1: Data entry
             values = self.prompt_for_inputs()
-            
-            # Step 2: Model Inference
             prediction, probability = self.predict(values)
-            
-            # Step 3: Output results
+
             risk_label = "LIKELY" if prediction == 1 else "UNLIKELY"
             print(f"\nResult: Heart disease is {risk_label}.")
             print(f"Confidence (Probability): {probability:.2%}\n")

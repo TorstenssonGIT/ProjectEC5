@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from joblib import dump
-from typing import Any, Dict, Tuple
+from typing import Any, Dict
 
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import (
     accuracy_score,
     classification_report,
@@ -51,7 +50,9 @@ class ModelTrainer:
                     ("scaler", StandardScaler()),
                     (
                         "model",
-                        LogisticRegression(max_iter=2000, random_state=self.random_state),
+                        LogisticRegression(
+                            max_iter=2000, random_state=self.random_state
+                        ),
                     ),
                 ]
             ),
@@ -96,7 +97,6 @@ class ModelTrainer:
         """Compute evaluation metrics for every trained model."""
         for result in self.results.values():
             predictions = result.pipeline.predict(X_test)
-            probabilities = None
             if hasattr(result.pipeline, "predict_proba"):
                 probabilities = result.pipeline.predict_proba(X_test)[:, 1]
             else:
@@ -134,6 +134,8 @@ class ModelTrainer:
         if not self.results:
             raise ValueError("No models have been trained yet.")
 
-        best_name = max(self.results, key=lambda name: self.results[name].accuracy)
+        best_name = max(
+            self.results, key=lambda name: self.results[name].accuracy
+        )
         dump(self.results[best_name].pipeline, output_path)
         return best_name
