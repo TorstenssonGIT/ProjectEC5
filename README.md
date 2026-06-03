@@ -131,6 +131,14 @@ The project includes **47 tests** with **84% code coverage**.
 ```bash
 pytest tests/ -v
 ```
+## Code Quality
+
+The project follows PEP8 standards. To check:
+
+```bash
+pip install flake8
+flake8 src/ --max-line-length=100
+```
 
 ### Generate HTML coverage report
 
