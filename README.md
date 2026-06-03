@@ -1,71 +1,168 @@
 # Heart Disease Prediction Project
 
-This project demonstrates a complete AI workflow for the UCI Heart Disease dataset. It includes data processing, exploratory data analysis, model training, evaluation, and a terminal-based prediction application.
+A complete machine learning pipeline for the UCI Heart Disease dataset — covering data processing, exploratory data analysis, model training and evaluation, a terminal app, and a Streamlit web interface.
 
-## Structure
-- `data/heart.csv` - dataset for modelling
-- `src/data_processing.py` - data loading, cleaning and splitting
-- `src/model_training.py` - model pipelines and evaluation
-- `src/terminal_app.py` - terminal application for interactive predictions
-- `src/main.py` - training and run entry point
-- `notebooks/analysis.ipynb` - documented notebook with EDA, training and results
-- `requirements.txt` - Python dependencies
-- `.gitignore` - ignored files and folders
+## Project Structure
+
+```
+ProjectEC3/
+├── data/
+│   └── heart.csv                  # UCI Heart Disease dataset
+├── models/                        # Saved model files (generated after training)
+│   ├── logistic_regression.pkl
+│   ├── random_forest.pkl
+│   └── training_results.json
+├── notebooks/
+│   └── analysis.ipynb             # Full EDA, training, results & Streamlit demo
+├── src/
+│   ├── data_processing.py         # DataProcessor class
+│   ├── model_training.py          # ModelTrainer class
+│   ├── terminal_app.py            # Terminal prediction app (HeartApp)
+│   ├── app.py                     # Streamlit web app (run via src/main.py)
+│   ├── utils.py                   # Logging helpers
+│   └── main.py                    # CLI entry point
+├── tests/
+│   ├── conftest.py
+│   ├── test_data_processing.py
+│   ├── test_model_training.py
+│   ├── test_app.py
+│   └── test_main.py
+├── heart.zip                      # Original dataset archive
+├── main.py                        # Root-level shim → calls src/main.py
+├── requirements.txt
+├── report.md
+├── TEST_DOCUMENTATION.md
+└── README.md
+```
 
 ## Setup
-1. Create virtual environment:
-   ```powershell
-   python -m venv .venv
-   .\.venv\Scripts\Activate.ps1
-   ```
-2. Install dependencies:
-   ```powershell
-   python -m pip install -r requirements.txt
-   ```
 
-## Run training and save model
-```powershell
+1. Create and activate a virtual environment:
+
+```bash
+python -m venv .venv
+# Windows
+.\.venv\Scripts\Activate.ps1
+# macOS / Linux
+source .venv/bin/activate
+```
+
+2. Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+## Running the Project
+
+### Train models and save to `models/`
+
+```bash
 python src/main.py --train
 ```
 
-## Train final model on the full dataset
-```powershell
+This trains both Logistic Regression and Random Forest, prints a comparison table, and saves:
+- `models/logistic_regression.pkl`
+- `models/random_forest.pkl`
+- `models/training_results.json`
+
+### Train a final model on the full dataset
+
+```bash
 python src/main.py --train-full --model-path models/heart_model_full.joblib
 ```
 
-## Run interactive application
-```powershell
+### Run the terminal prediction app
+
+```bash
 python src/main.py --app
 ```
 
-## Run Streamlit web application
-```powershell
+Prompts you to enter patient values and returns a risk prediction using the saved Random Forest model.
+
+### Run the Streamlit web app
+
+```bash
 python src/main.py --streamlit
 ```
 
+Opens the browser at `http://localhost:8501` with four pages: Home, Prediction, Model Performance, and About.
+
+> **Note:** Models must be trained before launching the Streamlit app.
+
+### Run everything from the notebook
+
+Open `notebooks/analysis.ipynb` in Jupyter and run all cells top-to-bottom. The notebook covers EDA, training, evaluation, and launches the Streamlit app inline with an embedded screenshot of its UI.
+
+```bash
+jupyter notebook notebooks/analysis.ipynb
+```
+
+## Model Results
+
+Both models are evaluated on a 20% held-out test split (stratified, `random_state=42`).
+
+| Model               | Accuracy | F1    | Precision | Recall | ROC AUC |
+|---------------------|----------|-------|-----------|--------|---------|
+| Logistic Regression | 0.869    | 0.877 | 0.861     | 0.893  | 0.935   |
+| Random Forest       | 0.885    | 0.893 | 0.878     | 0.909  | 0.955   |
+
+Random Forest was selected as the primary model based on higher accuracy and ROC AUC.
+
+> Exact values may vary slightly between runs despite the fixed seed, depending on scikit-learn version.
+
 ## Testing
 
-The project includes a comprehensive test suite with **44 tests** and **92% code coverage**:
+The project includes **44 tests** with **92% code coverage**.
 
 ### Run all tests
-```powershell
+
+```bash
 pytest tests/ -v
 ```
 
-### Generate coverage report
-```powershell
+### Generate HTML coverage report
+
+```bash
 pytest tests/ --cov=src --cov-report=html
+# Open htmlcov/index.html in a browser
 ```
 
-### Test structure
-- `tests/test_data_processing.py` - Tests for data loading, cleaning, and splitting
-- `tests/test_model_training.py` - Tests for model training and evaluation
-- `tests/test_app.py` - Tests for the prediction application
-- `tests/test_main.py` - Tests for CLI and workflow functions
-- `tests/conftest.py` - Shared test fixtures
+### Coverage by module
 
-See [TEST_DOCUMENTATION.md](TEST_DOCUMENTATION.md) for detailed test documentation.
+| Module                   | Coverage |
+|--------------------------|----------|
+| `src/app.py`             | 100%     |
+| `src/model_training.py`  | 98%      |
+| `src/data_processing.py` | 89%      |
+| `src/main.py`            | 79%      |
+
+See [TEST_DOCUMENTATION.md](TEST_DOCUMENTATION.md) for full details.
+
+## CI/CD (GitHub Actions)
+
+Add the following file as `.github/workflows/tests.yml` to run tests automatically on every push:
+
+```yaml
+name: Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: pytest tests/ --cov=src --cov-fail-under=85
+```
 
 ## Notes
-- The notebook documents all major steps, results and the ethical reflection.
-- The terminal app (`src/terminal_app.py`) uses the trained Random Forest model for predictions.
+
+- `notebooks/analysis.ipynb` documents all major steps, results, and the ethical reflection.
+- The terminal app (`src/terminal_app.py`) uses the trained Random Forest model for interactive predictions.
+- `heart.zip` contains the original dataset archive for reference.
+- This application is for **educational purposes only** and is not a medical diagnostic tool.

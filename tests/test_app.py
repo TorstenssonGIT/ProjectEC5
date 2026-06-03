@@ -5,7 +5,7 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 import pytest
 
-from src.app import HeartApp, FeatureInfo
+from src.terminal_app import HeartApp, FeatureInfo
 
 
 class TestFeatureInfo:
@@ -157,7 +157,7 @@ class TestHeartApp:
         assert mock_print.called
         # Check for prediction output
         print_calls = [str(call) for call in mock_print.call_args_list]
-        prediction_made = any('Prediction:' in str(call) for call in print_calls)
+        prediction_made = any('Result:' in str(call) for call in print_calls)
         assert prediction_made
 
     @patch('builtins.input')
