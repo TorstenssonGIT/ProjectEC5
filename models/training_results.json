@@ -12,5 +12,12 @@
     "precision": 1.0,
     "recall": 1.0,
     "roc_auc": 1.0
+  },
+  "Decision Tree": {
+    "accuracy": 0.9854,
+    "f1": 0.9855,
+    "precision": 1.0,
+    "recall": 0.9714,
+    "roc_auc": 0.9857
   }
 }
