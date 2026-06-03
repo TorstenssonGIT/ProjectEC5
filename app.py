@@ -15,29 +15,20 @@ TRAINING_RESULTS_PATH = MODELS_DIR / "training_results.json"
 MODEL_OPTIONS = {
     "Logistic Regression": "logistic_regression",
     "Random Forest": "random_forest",
+    "Decision Tree": "decision_tree",
 }
 
 # Features expected by the models (must match training order)
 FEATURE_COLUMNS = [
-    "age",
-    "sex",
-    "cp",
-    "trestbps",
-    "chol",
-    "fbs",
-    "restecg",
-    "thalach",
-    "exang",
-    "oldpeak",
-    "slope",
-    "ca",
-    "thal",
+    "age", "sex", "cp", "trestbps", "chol", "fbs", "restecg",
+    "thalach", "exang", "oldpeak", "slope", "ca", "thal",
 ]
 
 logger = setup_logging("streamlit_app")
 
+
 def setup_ui():
-    """Configures the Streamlit page and applies custom styling."""
+    """Configures the Streamlit page layout."""
     st.set_page_config(
         page_title="Heart Disease Risk Predictor",
         page_icon="❤️",
@@ -45,44 +36,31 @@ def setup_ui():
         initial_sidebar_state="expanded",
     )
 
-    # Custom CSS for a clean UI
+    # Minimal CSS — only button styling, theme colors come from .streamlit/config.toml
     st.markdown(
         """
         <style>
-            .stApp {
-                color: #0f172a;
-                background-color: #f8fafc;
-            }
             .stButton>button {
-                background-color: #1d4ed8;
+                background-color: #4f8ef7;
                 color: white;
                 border-radius: 5px;
             }
             .stButton>button:hover {
-                background-color: #2563eb;
-            }
-            [data-testid="stSidebar"] {
-                background-color: #eff6ff;
+                background-color: #3b7de0;
             }
         </style>
         """,
         unsafe_allow_html=True,
     )
 
+
 @st.cache_resource
 def load_model(model_name: str):
-    """
-    Loads a pre-trained model from a pickle file.
-    
-    Args:
-        model_name: The key from MODEL_OPTIONS.
-    Returns:
-        The loaded model pipeline or None if loading fails.
-    """
+    """Loads a pre-trained model from a pickle file."""
     model_path = MODELS_DIR / f"{model_name}.pkl"
     if not model_path.exists():
         st.error(
-            f"Model file not found: {model_path}.\nTrain models first using the CLI: python src/main.py --train"
+            f"Model file not found: {model_path}.\nTrain models first: python src/main.py --train"
         )
         return None
     try:
@@ -94,10 +72,7 @@ def load_model(model_name: str):
 
 @st.cache_data
 def load_training_results():
-    """
-    Loads the evaluation metrics generated during the training phase.
-    Returns a dictionary of results or None.
-    """
+    """Loads the evaluation metrics generated during training."""
     if not TRAINING_RESULTS_PATH.exists():
         return None
     try:
@@ -109,10 +84,7 @@ def load_training_results():
 
 
 def main():
-    """
-    Main entry point for the Streamlit application.
-    Handles navigation between pages.
-    """
+    """Main entry point for the Streamlit application."""
     setup_ui()
     st.title("❤️ Heart Disease Risk Predictor")
     st.markdown(
@@ -135,9 +107,7 @@ def main():
 
 
 def show_home():
-    """
-    Displays the landing page with project description and instructions.
-    """
+    """Displays the landing page."""
     st.header("Welcome")
     st.write(
         "This project predicts the likelihood of heart disease using clinical features from the UCI dataset. "
@@ -161,26 +131,26 @@ def get_patient_features():
     """Displays the input form and returns the feature list."""
     st.subheader("Patient parameters")
     col1, col2, col3 = st.columns(3)
-    
+
     with col1:
         age = st.slider("Age", 29, 77, 55)
         sex = st.selectbox("Sex", ["Female", "Male"])
         cp = st.selectbox("Chest Pain Type", [0, 1, 2, 3])
         trestbps = st.slider("Resting Blood Pressure", 90, 200, 130)
-        
+
     with col2:
         chol = st.slider("Cholesterol", 125, 565, 240)
         fbs = st.selectbox("Fasting Blood Sugar > 120 mg/dl", [0, 1])
         restecg = st.selectbox("Resting ECG result", [0, 1, 2])
         thalach = st.slider("Max Heart Rate", 60, 202, 150)
-        
+
     with col3:
         exang = st.selectbox("Exercise Induced Angina", [0, 1])
         oldpeak = st.slider("ST Depression", 0.0, 6.2, 1.0, step=0.1)
         slope = st.selectbox("ST Slope", [0, 1, 2])
         ca = st.selectbox("Number of major vessels (ca)", [0, 1, 2, 3])
         thal = st.selectbox("Thalassemia", [0, 1, 2, 3])
-        
+
     return [
         age,
         1 if sex == "Male" else 0,
@@ -190,14 +160,12 @@ def get_patient_features():
 
 
 def show_prediction():
-    """
-    Interactive form for entering patient data and generating predictions.
-    """
+    """Interactive form for entering patient data and generating predictions."""
     st.header("Risk Prediction")
     st.write("Select a model and input patient metrics to estimate heart disease probability.")
 
     model_label = st.selectbox("Prediction Model", list(MODEL_OPTIONS.keys()))
-    
+
     st.markdown("---")
     input_values = get_patient_features()
 
@@ -209,7 +177,6 @@ def show_prediction():
         input_df = pd.DataFrame([input_values], columns=FEATURE_COLUMNS)
         prediction = model.predict(input_df)[0]
         probability = get_prediction_probability(model, input_df)
-
         display_prediction_results(prediction, probability)
 
 
@@ -226,13 +193,12 @@ def display_prediction_results(prediction, probability):
     """Renders the prediction outcome to the UI."""
     st.markdown("---")
     st.subheader("Prediction Analysis")
-    
-    res_col1, res_col2 = st.columns(2)
+
+    res_col1, _ = st.columns(2)
     with res_col1:
         risk_text = "High risk of heart disease" if prediction == 1 else "Low risk of heart disease"
         risk_icon = "⚠️" if prediction == 1 else "✅"
         st.metric("Risk assessment", f"{risk_icon} {risk_text}")
-
         st.write(f"Probability of disease: {probability * 100:.1f}%")
 
         if prediction == 1:
@@ -244,16 +210,13 @@ def display_prediction_results(prediction, probability):
 
 
 def show_performance():
-    """
-    Visualizes model metrics (Accuracy, ROC-AUC, etc.) from training_results.json.
-    """
+    """Visualizes model metrics from training_results.json."""
     st.header("Model Performance")
     results = load_training_results()
     if results is None:
         st.error("No training results found. Train models first using the CLI.")
         return
 
-    # Transpose for a better table layout
     df = pd.DataFrame(results).T.round(4)
     st.subheader("Comparison Table")
     st.dataframe(df, use_container_width=True)
@@ -278,17 +241,15 @@ def show_performance():
 
 
 def show_about():
-    """
-    Information regarding the dataset source and project goal.
-    """
+    """Information about the dataset and project."""
     st.header("About")
     st.markdown(
         """
         ### Heart Disease Risk Predictor
 
-        This application is built to demonstrate a machine learning workflow for predicting heart disease using a clinical dataset.
+        This application demonstrates a machine learning workflow for predicting heart disease using a clinical dataset.
 
-        - **Models:** Logistic Regression, Random Forest
+        - **Models:** Logistic Regression, Random Forest, Decision Tree
         - **Dataset:** UCI Heart Disease dataset
         - **Goal:** Evaluate risk and explain how predictions are produced
 
