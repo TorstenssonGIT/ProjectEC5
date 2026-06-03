@@ -16,19 +16,24 @@ jobs:
         uses: actions/checkout@v4
 
       # Step 2: Install Python 3.11 — matches the version used in development
-      # and ensures consistent behaviour between local and CI environments
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      # Step 3: Install all project dependencies from requirements.txt
-      # Includes: scikit-learn, pandas, numpy, streamlit, pytest, pytest-cov
+      # Step 3: Install all project dependencies
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      # Step 4: Run the full test suite with coverage reporting
+      # Step 4: Run data preparation pipeline
+      # Combines heart.csv and heart_kaggle.csv into heart_combined.csv
+      # Must run before tests so the combined dataset exists
+      - name: Prepare combined dataset
+        run: python src/data_preparation.py
+
+      # Step 5: Run the full test suite with coverage reporting
       # Tests cover the following modules:
+      #   - src/data_preparation.py : dataset combination, imputation, encoding
       #   - src/data_processing.py  : DataProcessor load, clean, split, correlation
       #   - src/model_training.py   : ModelTrainer pipelines, train, evaluate, compare, save
       #   - src/terminal_app.py     : HeartApp init, predict, prompt_for_inputs, run
@@ -40,9 +45,7 @@ jobs:
       - name: Run tests with coverage
         run: pytest tests/ --cov=src --cov-report=term-missing --cov-report=html --cov-fail-under=84
 
-      # Step 5: Upload the HTML coverage report as a build artifact
-      # Available for download under the Actions run → Artifacts section on GitHub
-      # Runs even if tests fail so you can inspect coverage on a failing build
+      # Step 6: Upload the HTML coverage report as a build artifact
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v4
