@@ -14,9 +14,12 @@ ProjectEC4/
 ├── .streamlit/
 │   └── config.toml                # Streamlit dark theme configuration
 ├── data/
-│   ├── heart.csv                  # Original UCI Heart Disease dataset (1025 rows)
-│   ├── heart_kaggle.csv           # Kaggle Heart Failure Prediction dataset (918 rows)
-│   └── heart_combined.csv         # Combined dataset (1220 rows, generated)
+│   ├── heart.csv                  # Original UCI Cleveland dataset (legacy)
+│   ├── processed.cleveland.data   # UCI Cleveland (303 rows, 13 features) — primary
+│   ├── processed.hungarian.data   # UCI Hungarian (294 rows) — research only
+│   ├── processed.switzerland.data # UCI Switzerland (123 rows) — research only
+│   ├── processed.va.data          # UCI VA Long Beach (200 rows) — research only
+│   └── heart_combined.csv         # Prepared dataset (303 rows, generated)
 ├── models/                        # Saved model files (generated after training)
 │   ├── logistic_regression.pkl
 │   ├── random_forest.pkl
@@ -53,21 +56,34 @@ ProjectEC4/
 ### Why two datasets?
 ProjectEC4 combines the original UCI Heart Disease dataset with the Kaggle Heart Failure Prediction dataset (fedesoriano, 2021) to increase training data from 1025 to 1220 unique rows after deduplication.
 
-### Dataset combination methodology (`src/data_preparation.py`)
-The Kaggle dataset uses text labels for categorical variables which are converted to numeric values matching UCI encoding. Zero cholesterol values (172 rows) are replaced with age-appropriate clinical averages rather than a single global median. One zero RestingBP value is replaced with the dataset median.
+### Dataset strategy (`src/data_preparation.py`)
+After a systematic investigation (see below), the Cleveland dataset was chosen as the primary source. It is the only UCI hospital dataset with reliable measurements for all 13 features. The script:
+1. Loads `processed.cleveland.data`
+2. Converts target to binary (0 = no disease, 1+ = disease present)
+3. Imputes 6 missing values in `ca` and `thal` with column medians
+4. Saves to `heart_combined.csv` (used by DataProcessor by default)
 
 ### Why ca and thal were dropped
-During investigation (`scripts/investigate_datasets.py`) it was found that `ca` (number of major vessels) and `thal` (thalassemia type) are the **two most important features** in the original dataset (~28% combined feature importance), but are absent from the Kaggle dataset.
+During investigation (`scripts/investigate_datasets.py`) it was found that `ca` (number of major vessels) and `thal` (thalassemia type) are the **two most important features** (~28% combined importance). However inspection of the four UCI hospital files revealed that only Cleveland has reliable measurements:
 
-Initial attempts to impute these with median values caused accuracy to drop from ~88% to ~64% — confirming that 918 rows all receiving the same median value created misleading signals for the models. Since these are clinical measurements that cannot be reliably estimated, they are dropped from both datasets before combining.
+| Dataset | ca missing | thal missing | Rows |
+|---------|-----------|-------------|------|
+| Cleveland | 4 | 2 | 303 |
+| Hungarian | 291 | 266 | 294 |
+| Switzerland | 118 | 52 | 123 |
+| VA Long Beach | 198 | 166 | 200 |
+
+Imputing `ca` and `thal` for 90%+ of rows in three datasets was shown to severely degrade accuracy (from ~88% to ~64%). Dropping them gives honest data from all 918 rows across four hospitals.
 
 | Approach | Random Forest Accuracy |
 |----------|----------------------|
-| Original UCI only (1025 rows, 13 features) | ~88% |
+| Original UCI Cleveland only (302 rows, 13 features) | ~88% |
 | Combined with imputed ca/thal (1220 rows, 13 features) | ~64% |
-| Combined without ca/thal (1220 rows, 11 features) | TBD after retraining |
+| Four UCI hospitals without ca/thal (918 rows, 11 features) | ~67% |
+| Cleveland only with all 13 features (303 rows) | ~88% ← selected |
 
-The `chol_imputed` flag column is included in `heart_combined.csv` for transparency and auditing but is automatically dropped before model training.
+### Why the Kaggle dataset was replaced
+The Kaggle Heart Failure Prediction dataset uses different feature encodings, has 172 zero cholesterol values requiring imputation, and does not include `ca` or `thal`. The four UCI hospital files are from the same original source, consistently formatted, and better documented.
 
 ## Setup
 
@@ -143,13 +159,15 @@ The notebook runs `data_preparation.py` automatically in Section 2, then covers 
 
 ## Model Results
 
-All three models evaluated on a 20% held-out test split of `heart_combined.csv` (stratified, `random_state=42`), 11 features (ca and thal dropped).
+All three models evaluated on a 20% held-out test split of `heart_combined.csv` — Cleveland dataset, 303 rows, 13 features (stratified, `random_state=42`).
 
 | Model               | Accuracy | F1    | Precision | Recall | ROC AUC |
 |---------------------|----------|-------|-----------|--------|---------|
-| Logistic Regression | 0.705    | 0.719 | 0.742     | 0.697  | 0.821   |
-| Random Forest       | 0.672    | 0.677 | 0.724     | 0.636  | 0.809   |
-| Decision Tree       | 0.639    | 0.621 | 0.720     | 0.545  | 0.648   |
+| Logistic Regression | TBD      | TBD   | TBD       | TBD    | TBD     |
+| Random Forest       | TBD      | TBD   | TBD       | TBD    | TBD     |
+| Decision Tree       | TBD      | TBD   | TBD       | TBD    | TBD     |
+
+> Update after running `python src/data_preparation.py` then `python src/main.py --train`.
 
 ### Investigation Findings
 

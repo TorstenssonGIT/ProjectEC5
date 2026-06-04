@@ -33,14 +33,20 @@ class TestDataProcessor:
         assert not df.empty
         assert df.isnull().sum().sum() == 0
 
-    def test_clean_data_drops_metadata_columns(self, sample_data_csv_path: str) -> None:
-        """Test that metadata columns are dropped during cleaning."""
+    def test_clean_data_drops_chol_imputed(self, sample_data_csv_path: str) -> None:
+        """Test that chol_imputed metadata column is dropped during cleaning."""
         processor = DataProcessor(sample_data_csv_path)
         processor.load_data()
         processor.clean_data()
         assert "chol_imputed" not in processor.df.columns
-        assert "ca" not in processor.df.columns
-        assert "thal" not in processor.df.columns
+
+    def test_clean_data_keeps_ca_and_thal(self, sample_data_csv_path: str) -> None:
+        """ca and thal are real clinical features and should be kept."""
+        processor = DataProcessor(sample_data_csv_path)
+        processor.load_data()
+        processor.clean_data()
+        assert "ca" in processor.df.columns
+        assert "thal" in processor.df.columns
 
     def test_clean_data_normalizes_columns(self, sample_data_csv_path: str) -> None:
         """Test that column names are normalized to lowercase."""
@@ -71,8 +77,7 @@ class TestDataProcessor:
         assert len(X) == 100
         assert len(y) == 100
         assert "target" not in X.columns
-        # 13 original features minus ca and thal = 11
-        assert X.shape[1] == 11
+        assert X.shape[1] == 13  # all 13 features including ca and thal
 
     def test_split_data(self, sample_data_csv_path: str) -> None:
         """Test data splitting."""
@@ -126,17 +131,16 @@ class TestDataProcessor:
 
         assert isinstance(corr_matrix, pd.DataFrame)
         assert corr_matrix.shape[0] == corr_matrix.shape[1]
-        # 11 features + target = 12 columns after dropping ca and thal
-        assert len(corr_matrix) == 12
+        # 13 features + target = 14 columns
+        assert len(corr_matrix) == 14
 
     def test_load_real_heart_dataset(self) -> None:
-        """Test loading the actual heart dataset from data/heart.csv."""
-        processor = DataProcessor("data/heart.csv")
+        """Test loading the prepared heart dataset."""
+        processor = DataProcessor("data/heart_combined.csv")
         df = processor.load_data()
 
         assert not df.empty
         assert "target" in df.columns
-        # After deduplication heart.csv has 302 rows
         assert df.shape[0] >= 300
 
     def test_default_path_uses_combined(self) -> None:
