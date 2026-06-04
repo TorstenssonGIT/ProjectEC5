@@ -1,14 +1,24 @@
 from __future__ import annotations
 
+from pathlib import Path
+from typing import Tuple
+
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from typing import Tuple
+
+# Default to the combined dataset — falls back to original if not found
+_DEFAULT_DATA_PATH = str(
+    Path(__file__).resolve().parent.parent / "data" / "heart_combined.csv"
+)
+
+# Columns that are metadata/flags and should never be used as model features
+_COLUMNS_TO_DROP = ["chol_imputed"]
 
 
 class DataProcessor:
     """Load, clean and split the heart disease dataset."""
 
-    def __init__(self, data_path: str) -> None:
+    def __init__(self, data_path: str = _DEFAULT_DATA_PATH) -> None:
         self.data_path = data_path
         self.df: pd.DataFrame = pd.DataFrame()
 
@@ -18,12 +28,18 @@ class DataProcessor:
         return self.df
 
     def clean_data(self) -> pd.DataFrame:
-        """Normalize column names, fill missing values and return cleaned data."""
+        """Normalize column names, drop metadata columns,
+        fill missing values and return cleaned data."""
         if self.df.empty:
             self.load_data()
 
         self.df = self.df.copy()
         self.df.columns = [col.strip().lower() for col in self.df.columns]
+
+        # Drop metadata/flag columns that are not model features
+        cols_to_drop = [c for c in _COLUMNS_TO_DROP if c in self.df.columns]
+        if cols_to_drop:
+            self.df = self.df.drop(columns=cols_to_drop)
 
         if self.df.isnull().any().any():
             numeric_cols = self.df.select_dtypes(include="number").columns
