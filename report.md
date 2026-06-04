@@ -65,17 +65,29 @@ för reproducerbarhet.
 ## 3. Hyperparametertuning (ProjectEC4)
 
 I ProjectEC4 genomfördes systematisk hyperparametertuning med GridSearchCV och 5-faldig
-korsvalidering för att optimera modellernas prestanda på det utökade datasetet (918 rader).
+korsvalidering. Scoring-mått: **ROC AUC** — robust för obalanserade klasser.
 
-### Tunade parametrar
+### Bästa parametrar (GridSearchCV, cv=5)
 
-**Random Forest:** n_estimators, max_depth, min_samples_split, min_samples_leaf, max_features
+| Modell | Parameter | Värde |
+|--------|-----------|-------|
+| Logistic Regression | C / penalty / solver | 0.1 / l2 / lbfgs |
+| Random Forest | n_estimators / max_depth / max_features | 200 / 5 / sqrt |
+| Random Forest | min_samples_split | 2 |
+| Decision Tree | criterion / max_depth | gini / 3 |
+| Decision Tree | min_samples_leaf / min_samples_split | 2 / 2 |
 
-**Logistic Regression:** C (regulariseringsstyrka), solver, max_iter
+### Jämförelse: Default vs Tunade parametrar
 
-**Decision Tree:** max_depth, min_samples_split, min_samples_leaf, criterion
+| Modell | Default Acc | Tuned Acc | Default ROC AUC | Tuned ROC AUC |
+|--------|-------------|-----------|-----------------|---------------|
+| Logistic Regression | 0.869 | 0.853 | 0.951 | 0.958 |
+| Random Forest | 0.902 | 0.902 | 0.955 | 0.958 |
+| Decision Tree | 0.787 | 0.869 | 0.808 | 0.871 |
 
-Bästa parametrar valdes baserat på ROC AUC-score på valideringssettet.
+Tuningen förbättrade framför allt **Decision Tree** avsevärt (+8.2% accuracy, +6.3% ROC AUC).
+Random Forest behöll sin accuracy men förbättrade ROC AUC marginellt.
+Bästa parametrar valdes baserat på ROC AUC på valideringssettet.
 Slutlig utvärdering genomfördes på ett stratifierat test-set (20%, `random_state=42`).
 
 ## 4. Resultat
@@ -94,7 +106,7 @@ Random Forest uppnådde bäst resultat på samtliga mätetal. I ett medicinskt
 sammanhang är **Recall** det mest kritiska måttet — ett missat fall av hjärtsjukdom
 (falskt negativt) är allvarligare än ett falskt larm.
 
-## 4. Etisk reflektion
+## 5. Etisk reflektion
 
 **Bias i datasetet:** Det ursprungliga datasetet representerar patienter där
 fördelningen mellan åldrar och kön är sned — majoriteten är medelålders män.
@@ -114,3 +126,20 @@ Decision Tree erbjuder full transparens men på bekostnad av noggrannhet.
 **Användning i vården:** Modellen är ett pedagogiskt verktyg — inte ett
 medicinskt diagnostikinstrument. Prediktioner ska alltid kompletteras med
 kliniskt omdöme och diagnostiska tester.
+
+## 6. Versionshantering
+
+I ProjectEC4 introducerades Git-taggning som en del av projektets arbetsflöde.
+En tagg sätts på `main` efter att alla tester är gröna och rapporten är uppdaterad,
+och markerar en stabil release av projektet.
+
+```bash
+git tag -a v4.0 -m "ProjectEC4 - hyperparameter tuning, combined dataset 918 rows"
+git push origin v4.0
+```
+
+Taggar syns under **Releases** på GitHub och gör det enkelt att återgå till en specifik version.
+
+CI/CD-workflödet uppgraderades även till **Node.js 24** för GitHub Actions
+(`FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true`) inför Githubs deadline den 16 juni 2026,
+då Node.js 20 fasas ut från runners.
