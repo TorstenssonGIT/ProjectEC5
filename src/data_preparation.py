@@ -10,23 +10,23 @@ Methodology:
 2. Convert Kaggle text labels to numeric values matching the UCI encoding
 3. Replace physiologically impossible zero values (Cholesterol, RestingBP)
    with age-appropriate averages and flag imputed rows in 'chol_imputed'
-4. Impute missing features (ca, thal) using median values from the original dataset
+4. Drop 'ca' and 'thal' from both datasets before combining.
+   Rationale: these are clinical measurements (fluoroscopy results and
+   thalassemia type) that are absent from the Kaggle dataset. Imputing
+   them with median values was shown to severely degrade model accuracy
+   since ca and thal are the two most important features (~28% combined
+   importance). Dropping them gives honest data from 1220 rows rather
+   than misleading imputed signals.
 5. Rename Kaggle columns to match UCI column names
 6. Concatenate both datasets and remove duplicates
 7. Save to data/heart_combined.csv
-
-Note on chol_imputed flag:
-    The column 'chol_imputed' (1=imputed, 0=original) is included in the CSV
-    for transparency and auditing only. It is NOT a clinical feature and must
-    be dropped before model training. DataProcessor handles this automatically
-    by selecting only the 13 known feature columns.
 
 Column mapping (Kaggle -> UCI):
     Age           -> age
     Sex           -> sex           (M=1, F=0)
     ChestPainType -> cp            (ATA=1, NAP=2, ASY=0, TA=3)
     RestingBP     -> trestbps
-    Cholesterol   -> chol
+    Cholesterol   -> chol          (zeros replaced with age-based average)
     FastingBS     -> fbs
     RestingECG    -> restecg       (Normal=1, ST=2, LVH=0)
     MaxHR         -> thalach
@@ -35,9 +35,9 @@ Column mapping (Kaggle -> UCI):
     ST_Slope      -> slope         (Up=2, Flat=1, Down=0)
     HeartDisease  -> target
 
-Missing features imputed from original dataset medians:
-    ca   (number of major vessels, 0-4)
-    thal (thalassemia type)
+Features dropped from both datasets:
+    ca   (number of major vessels) — absent from Kaggle, imputation unreliable
+    thal (thalassemia type)        — absent from Kaggle, imputation unreliable
 """
 
 from __future__ import annotations
@@ -52,6 +52,9 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 ORIGINAL_PATH = DATA_DIR / "heart.csv"
 KAGGLE_PATH = DATA_DIR / "heart_kaggle.csv"
 COMBINED_PATH = DATA_DIR / "heart_combined.csv"
+
+# Features dropped from both datasets before combining
+FEATURES_TO_DROP = ["ca", "thal"]
 
 # --- Encoding maps ---
 SEX_MAP = {"M": 1, "F": 0}
@@ -110,27 +113,22 @@ def get_age_based_cholesterol(age: int) -> float:
     for low, high, avg in AGE_CHOLESTEROL_MAP:
         if low <= age <= high:
             return float(avg)
-    # Fallback for ages outside defined ranges
     return 200.0
 
 
 def load_original() -> pd.DataFrame:
-    """Load and normalise the original UCI Cleveland dataset."""
+    """Load and normalise the original UCI dataset, dropping ca and thal."""
     df = pd.read_csv(ORIGINAL_PATH)
     df.columns = [col.strip().lower() for col in df.columns]
-    # Flag all original rows as not imputed
     df["chol_imputed"] = 0
+    df = df.drop(columns=[c for c in FEATURES_TO_DROP if c in df.columns])
     return df
 
 
-def load_kaggle(ca_median: float, thal_median: float) -> pd.DataFrame:
+def load_kaggle() -> pd.DataFrame:
     """
     Load the Kaggle dataset, convert text labels to numeric values,
-    impute missing features, and rename columns to match UCI.
-
-    Args:
-        ca_median:   Median value of 'ca' from the original dataset.
-        thal_median: Median value of 'thal' from the original dataset.
+    handle zero values, and rename columns to match UCI.
     """
     df = pd.read_csv(KAGGLE_PATH)
 
@@ -141,11 +139,9 @@ def load_kaggle(ca_median: float, thal_median: float) -> pd.DataFrame:
     df["ExerciseAngina"] = df["ExerciseAngina"].map(EXERCISE_ANGINA_MAP)
     df["ST_Slope"] = df["ST_Slope"].map(ST_SLOPE_MAP)
 
-    # Flag rows where cholesterol will be imputed
+    # Flag and replace zero cholesterol with age-based averages
     df["chol_imputed"] = (df["Cholesterol"] == 0).astype(int)
     imputed_count = df["chol_imputed"].sum()
-
-    # Replace zero cholesterol with age-appropriate averages
     zero_mask = df["Cholesterol"] == 0
     df.loc[zero_mask, "Cholesterol"] = df.loc[zero_mask, "Age"].apply(
         get_age_based_cholesterol
@@ -158,12 +154,7 @@ def load_kaggle(ca_median: float, thal_median: float) -> pd.DataFrame:
     # Rename columns to match UCI
     df = df.rename(columns=COLUMN_RENAME_MAP)
 
-    # Impute missing features using original dataset medians
-    df["ca"] = ca_median
-    df["thal"] = thal_median
-
     print(f"Cholesterol imputed (age-based): {imputed_count} rows")
-    print(f"RestingBP imputed (median)      : {(df['trestbps'] == bp_median).sum()} rows")
 
     return df
 
@@ -174,16 +165,7 @@ def combine_datasets() -> pd.DataFrame:
     Saves to heart_combined.csv and returns the combined dataframe.
     """
     original = load_original()
-
-    # Compute medians from original for imputation
-    ca_median = original["ca"].median()
-    thal_median = original["thal"].median()
-
-    print(f"ca median (from original)  : {ca_median}")
-    print(f"thal median (from original): {thal_median}")
-    print()
-
-    kaggle = load_kaggle(ca_median, thal_median)
+    kaggle = load_kaggle()
 
     # Ensure column order matches original
     kaggle = kaggle[original.columns]
@@ -197,13 +179,14 @@ def combine_datasets() -> pd.DataFrame:
     after = len(combined)
 
     print()
-    print(f"Original dataset  : {len(original)} rows")
-    print(f"Kaggle dataset    : {len(kaggle)} rows")
-    print(f"Combined (raw)    : {before} rows")
-    print(f"Duplicates removed: {before - after}")
-    print(f"Final dataset     : {after} rows")
-    print(f"Imputed chol rows : {combined['chol_imputed'].sum()}")
-    print(f"Saved to          : {COMBINED_PATH}")
+    print(f"Features dropped   : {FEATURES_TO_DROP} (unreliable imputation)")
+    print(f"Original dataset   : {len(original)} rows, {len(original.columns)} columns")
+    print(f"Kaggle dataset     : {len(kaggle)} rows, {len(kaggle.columns)} columns")
+    print(f"Combined (raw)     : {before} rows")
+    print(f"Duplicates removed : {before - after}")
+    print(f"Final dataset      : {after} rows")
+    print(f"Imputed chol rows  : {combined['chol_imputed'].sum()}")
+    print(f"Saved to           : {COMBINED_PATH}")
 
     combined.to_csv(COMBINED_PATH, index=False)
     return combined
