@@ -9,9 +9,14 @@ from __future__ import annotations
 from pathlib import Path
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split
+import sys
+
+# Add project root to path so src imports work
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from src.data_processing import DataProcessor
 from src.model_training import ModelTrainer
+from sklearn.model_selection import train_test_split
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 

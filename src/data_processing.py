@@ -6,13 +6,13 @@ from typing import Tuple
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-# Default to the combined dataset — falls back to original if not found
+# Default to the combined dataset
 _DEFAULT_DATA_PATH = str(
     Path(__file__).resolve().parent.parent / "data" / "heart_combined.csv"
 )
 
 # Columns that are metadata/flags and should never be used as model features
-_COLUMNS_TO_DROP = ["chol_imputed"]
+_COLUMNS_TO_DROP = ["chol_imputed", "ca", "thal"]
 
 
 class DataProcessor:
@@ -36,7 +36,7 @@ class DataProcessor:
         self.df = self.df.copy()
         self.df.columns = [col.strip().lower() for col in self.df.columns]
 
-        # Drop metadata/flag columns that are not model features
+        # Drop metadata/flag columns and features not present in all datasets
         cols_to_drop = [c for c in _COLUMNS_TO_DROP if c in self.df.columns]
         if cols_to_drop:
             self.df = self.df.drop(columns=cols_to_drop)
