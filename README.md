@@ -163,11 +163,13 @@ All three models evaluated on a 20% held-out test split of `heart_combined.csv` 
 
 | Model               | Accuracy | F1    | Precision | Recall | ROC AUC |
 |---------------------|----------|-------|-----------|--------|---------|
-| Logistic Regression | TBD      | TBD   | TBD       | TBD    | TBD     |
-| Random Forest       | TBD      | TBD   | TBD       | TBD    | TBD     |
-| Decision Tree       | TBD      | TBD   | TBD       | TBD    | TBD     |
+| Logistic Regression | 0.803    | 0.824 | 0.800     | 0.848  | 0.871   |
+| Decision Tree       | 0.803    | 0.818 | 0.818     | 0.818  | 0.802   |
+| Random Forest       | 0.754    | 0.776 | 0.765     | 0.788  | 0.870   |
 
-> Update after running `python src/data_preparation.py` then `python src/main.py --train`.
+Logistic Regression and Decision Tree tied on accuracy. Random Forest, typically the strongest model, came third — likely due to the small dataset size (303 rows) where simpler models can outperform ensembles that need more data to generalise well. In a medical context **recall** is the most critical metric since a missed disease case is more costly than a false alarm.
+
+> Exact values may vary slightly between runs despite the fixed seed, depending on scikit-learn version.
 
 ### Investigation Findings
 
