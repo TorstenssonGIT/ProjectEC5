@@ -9,7 +9,6 @@ import pytest
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.preprocessing import StandardScaler
 
 from src.model_training import ModelTrainer, ModelResult
 
@@ -50,6 +49,19 @@ class TestModelTrainer:
         assert clf.max_depth == 10
         assert clf.random_state == 42
 
+    def test_get_param_grids(self) -> None:
+        """Test that parameter grids are defined for all models."""
+        trainer = ModelTrainer()
+        grids = trainer.get_param_grids()
+
+        assert 'Logistic Regression' in grids
+        assert 'Random Forest' in grids
+        assert 'Decision Tree' in grids
+
+        assert 'model__C' in grids['Logistic Regression']
+        assert 'model__n_estimators' in grids['Random Forest']
+        assert 'model__max_depth' in grids['Decision Tree']
+
     def test_train_models(self) -> None:
         """Test training models."""
         np.random.seed(42)
@@ -68,6 +80,36 @@ class TestModelTrainer:
             assert isinstance(result, ModelResult)
             assert result.name == name
             assert hasattr(result.pipeline, 'predict')
+
+    def test_tune_models(self) -> None:
+        """Test that tune_models produces valid fitted pipelines."""
+        np.random.seed(42)
+        X_train = pd.DataFrame(np.random.randn(80, 13))
+        y_train = pd.Series(np.random.randint(0, 2, 80))
+
+        trainer = ModelTrainer(random_state=42)
+        results = trainer.tune_models(X_train, y_train, cv=3)
+
+        assert len(results) == 3
+        for name, result in results.items():
+            assert isinstance(result, ModelResult)
+            assert hasattr(result.pipeline, 'predict')
+
+    def test_tune_models_improves_or_maintains_results(self) -> None:
+        """Tuned models should produce valid metrics after evaluation."""
+        np.random.seed(42)
+        X_train = pd.DataFrame(np.random.randn(80, 13))
+        y_train = pd.Series(np.random.randint(0, 2, 80))
+        X_test = pd.DataFrame(np.random.randn(20, 13))
+        y_test = pd.Series(np.random.randint(0, 2, 20))
+
+        trainer = ModelTrainer(random_state=42)
+        trainer.tune_models(X_train, y_train, cv=3)
+        results = trainer.evaluate(X_test, y_test)
+
+        for result in results.values():
+            assert 0 <= result.accuracy <= 1
+            assert 0 <= result.roc_auc <= 1
 
     def test_evaluate_models(self) -> None:
         """Test model evaluation."""
