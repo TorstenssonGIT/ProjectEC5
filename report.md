@@ -62,7 +62,23 @@ Hyperparameterval: Random Forest tränas med 200 estimatorer och Decision Tree
 med max djup 10 för att begränsa överpressning. Båda använder `random_state=42`
 för reproducerbarhet.
 
-## 3. Resultat
+## 3. Hyperparametertuning (ProjectEC4)
+
+I ProjectEC4 genomfördes systematisk hyperparametertuning med GridSearchCV och 5-faldig
+korsvalidering för att optimera modellernas prestanda på det utökade datasetet (918 rader).
+
+### Tunade parametrar
+
+**Random Forest:** n_estimators, max_depth, min_samples_split, min_samples_leaf, max_features
+
+**Logistic Regression:** C (regulariseringsstyrka), solver, max_iter
+
+**Decision Tree:** max_depth, min_samples_split, min_samples_leaf, criterion
+
+Bästa parametrar valdes baserat på ROC AUC-score på valideringssettet.
+Slutlig utvärdering genomfördes på ett stratifierat test-set (20%, `random_state=42`).
+
+## 4. Resultat
 
 Alla modeller utvärderas på ett stratifierat test-set (20%, `random_state=42`).
 
@@ -72,7 +88,7 @@ Alla modeller utvärderas på ett stratifierat test-set (20%, `random_state=42`)
 | Random Forest        | 0.885    | 0.893 | 0.878     | 0.909  | 0.955   |
 | Decision Tree        | 0.754    | 0.771 | 0.750     | 0.793  | 0.754   |
 
-*Värden från det ursprungliga UCI Cleveland-datasetet (303 rader).*
+*Värden från det ursprungliga UCI Cleveland-datasetet (303 rader) — baseline ProjectEC3.*
 
 Random Forest uppnådde bäst resultat på samtliga mätetal. I ett medicinskt
 sammanhang är **Recall** det mest kritiska måttet — ett missat fall av hjärtsjukdom
