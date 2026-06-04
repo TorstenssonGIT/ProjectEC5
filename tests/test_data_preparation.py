@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -22,7 +21,7 @@ from src.data_preparation import (
 
 @pytest.fixture
 def sample_original_csv(tmp_path: Path) -> Path:
-    """Create a temporary original-style CSV (UCI format)."""
+    """Create a temporary original-style CSV (UCI format, with ca and thal)."""
     np.random.seed(42)
     n = 50
     df = pd.DataFrame({
@@ -80,24 +79,20 @@ class TestGetAgeBasedCholesterol:
     """Tests for the age-based cholesterol lookup function."""
 
     def test_returns_correct_value_for_each_age_band(self) -> None:
-        """Each defined age band should return its expected average."""
         for low, high, expected in AGE_CHOLESTEROL_MAP:
             mid = (low + high) // 2
             assert get_age_based_cholesterol(mid) == float(expected)
 
     def test_boundary_ages(self) -> None:
-        """Lower and upper boundaries of each band should return correct value."""
         for low, high, expected in AGE_CHOLESTEROL_MAP:
             assert get_age_based_cholesterol(low) == float(expected)
             assert get_age_based_cholesterol(high) == float(expected)
 
     def test_fallback_for_out_of_range_age(self) -> None:
-        """Ages outside defined ranges should return the fallback value of 200."""
         assert get_age_based_cholesterol(15) == 200.0
         assert get_age_based_cholesterol(95) == 200.0
 
     def test_returns_float(self) -> None:
-        """Return type should always be float."""
         assert isinstance(get_age_based_cholesterol(45), float)
 
 
@@ -107,7 +102,6 @@ class TestLoadOriginal:
     """Tests for loading the original UCI dataset."""
 
     def test_loads_correctly(self, sample_original_csv: Path, monkeypatch) -> None:
-        """Should load CSV and normalise column names."""
         import src.data_preparation as dp
         monkeypatch.setattr(dp, "ORIGINAL_PATH", sample_original_csv)
         df = load_original()
@@ -116,7 +110,6 @@ class TestLoadOriginal:
         assert "target" in df.columns
 
     def test_adds_chol_imputed_flag(self, sample_original_csv: Path, monkeypatch) -> None:
-        """All original rows should have chol_imputed=0."""
         import src.data_preparation as dp
         monkeypatch.setattr(dp, "ORIGINAL_PATH", sample_original_csv)
         df = load_original()
@@ -124,11 +117,18 @@ class TestLoadOriginal:
         assert (df["chol_imputed"] == 0).all()
 
     def test_column_names_are_lowercase(self, sample_original_csv: Path, monkeypatch) -> None:
-        """All column names should be lowercase."""
         import src.data_preparation as dp
         monkeypatch.setattr(dp, "ORIGINAL_PATH", sample_original_csv)
         df = load_original()
         assert all(col == col.lower() for col in df.columns)
+
+    def test_ca_and_thal_dropped(self, sample_original_csv: Path, monkeypatch) -> None:
+        """ca and thal should be dropped from the original dataset."""
+        import src.data_preparation as dp
+        monkeypatch.setattr(dp, "ORIGINAL_PATH", sample_original_csv)
+        df = load_original()
+        assert "ca" not in df.columns
+        assert "thal" not in df.columns
 
 
 # --- Tests for load_kaggle ---
@@ -137,50 +137,45 @@ class TestLoadKaggle:
     """Tests for loading and converting the Kaggle dataset."""
 
     def test_loads_and_converts(self, sample_kaggle_csv: Path, monkeypatch) -> None:
-        """Should load CSV, convert text labels, and rename columns."""
         import src.data_preparation as dp
         monkeypatch.setattr(dp, "KAGGLE_PATH", sample_kaggle_csv)
-        df = load_kaggle(ca_median=0.0, thal_median=2.0)
+        df = load_kaggle()
         assert isinstance(df, pd.DataFrame)
         assert "age" in df.columns
         assert "target" in df.columns
 
     def test_text_labels_converted_to_numeric(self, sample_kaggle_csv: Path, monkeypatch) -> None:
-        """Text columns should be fully numeric after conversion."""
         import src.data_preparation as dp
         monkeypatch.setattr(dp, "KAGGLE_PATH", sample_kaggle_csv)
-        df = load_kaggle(ca_median=0.0, thal_median=2.0)
+        df = load_kaggle()
         for col in ["sex", "cp", "restecg", "exang", "slope"]:
             assert pd.api.types.is_numeric_dtype(df[col]), f"{col} should be numeric"
 
     def test_zero_cholesterol_replaced(self, sample_kaggle_csv: Path, monkeypatch) -> None:
-        """Zero cholesterol values should be replaced with age-based averages."""
         import src.data_preparation as dp
         monkeypatch.setattr(dp, "KAGGLE_PATH", sample_kaggle_csv)
-        df = load_kaggle(ca_median=0.0, thal_median=2.0)
-        assert (df["chol"] > 0).all(), "No zero cholesterol values should remain"
+        df = load_kaggle()
+        assert (df["chol"] > 0).all()
 
     def test_chol_imputed_flag_set(self, sample_kaggle_csv: Path, monkeypatch) -> None:
-        """Rows with original zero cholesterol should be flagged."""
         import src.data_preparation as dp
         monkeypatch.setattr(dp, "KAGGLE_PATH", sample_kaggle_csv)
-        df = load_kaggle(ca_median=0.0, thal_median=2.0)
+        df = load_kaggle()
         assert df["chol_imputed"].sum() == 2
 
     def test_zero_resting_bp_replaced(self, sample_kaggle_csv: Path, monkeypatch) -> None:
-        """Zero RestingBP values should be replaced with median."""
         import src.data_preparation as dp
         monkeypatch.setattr(dp, "KAGGLE_PATH", sample_kaggle_csv)
-        df = load_kaggle(ca_median=0.0, thal_median=2.0)
+        df = load_kaggle()
         assert (df["trestbps"] > 0).all()
 
-    def test_ca_and_thal_imputed(self, sample_kaggle_csv: Path, monkeypatch) -> None:
-        """ca and thal should be set to provided median values."""
+    def test_no_ca_or_thal_columns(self, sample_kaggle_csv: Path, monkeypatch) -> None:
+        """Kaggle dataset should not have ca or thal after loading."""
         import src.data_preparation as dp
         monkeypatch.setattr(dp, "KAGGLE_PATH", sample_kaggle_csv)
-        df = load_kaggle(ca_median=1.0, thal_median=3.0)
-        assert (df["ca"] == 1.0).all()
-        assert (df["thal"] == 3.0).all()
+        df = load_kaggle()
+        assert "ca" not in df.columns
+        assert "thal" not in df.columns
 
 
 # --- Tests for combine_datasets ---
@@ -192,7 +187,6 @@ class TestCombineDatasets:
         self, sample_original_csv: Path, sample_kaggle_csv: Path,
         tmp_path: Path, monkeypatch
     ) -> None:
-        """Should combine datasets and save to combined path."""
         import src.data_preparation as dp
         monkeypatch.setattr(dp, "ORIGINAL_PATH", sample_original_csv)
         monkeypatch.setattr(dp, "KAGGLE_PATH", sample_kaggle_csv)
@@ -209,7 +203,6 @@ class TestCombineDatasets:
         self, sample_original_csv: Path, sample_kaggle_csv: Path,
         tmp_path: Path, monkeypatch
     ) -> None:
-        """Combined dataset should have no duplicate rows."""
         import src.data_preparation as dp
         monkeypatch.setattr(dp, "ORIGINAL_PATH", sample_original_csv)
         monkeypatch.setattr(dp, "KAGGLE_PATH", sample_kaggle_csv)
@@ -219,11 +212,11 @@ class TestCombineDatasets:
         feature_cols = [c for c in result.columns if c != "chol_imputed"]
         assert result.duplicated(subset=feature_cols).sum() == 0
 
-    def test_combined_has_13_features_plus_flag(
+    def test_combined_has_11_features_plus_target_plus_flag(
         self, sample_original_csv: Path, sample_kaggle_csv: Path,
         tmp_path: Path, monkeypatch
     ) -> None:
-        """Combined dataset should have 13 features + target + chol_imputed."""
+        """Combined dataset should have 11 features + target + chol_imputed = 13 columns."""
         import src.data_preparation as dp
         monkeypatch.setattr(dp, "ORIGINAL_PATH", sample_original_csv)
         monkeypatch.setattr(dp, "KAGGLE_PATH", sample_kaggle_csv)
@@ -232,13 +225,14 @@ class TestCombineDatasets:
         result = combine_datasets()
         assert "chol_imputed" in result.columns
         assert "target" in result.columns
-        assert len(result.columns) == 15  # 13 features + target + chol_imputed
+        assert "ca" not in result.columns
+        assert "thal" not in result.columns
+        assert len(result.columns) == 13  # 11 features + target + chol_imputed
 
     def test_no_zero_cholesterol_in_combined(
         self, sample_original_csv: Path, sample_kaggle_csv: Path,
         tmp_path: Path, monkeypatch
     ) -> None:
-        """No zero cholesterol values should exist in the combined dataset."""
         import src.data_preparation as dp
         monkeypatch.setattr(dp, "ORIGINAL_PATH", sample_original_csv)
         monkeypatch.setattr(dp, "KAGGLE_PATH", sample_kaggle_csv)
