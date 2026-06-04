@@ -80,7 +80,7 @@ Imputing `ca` and `thal` for 90%+ of rows in three datasets was shown to severel
 | Original UCI Cleveland only (302 rows, 13 features) | ~88% |
 | Combined with imputed ca/thal (1220 rows, 13 features) | ~64% |
 | Four UCI hospitals without ca/thal (918 rows, 11 features) | ~67% |
-| Cleveland only with all 13 features (303 rows) | ~88% ← selected |
+| Cleveland only with all 13 features (303 rows) | 0.902 RF ← selected |
 
 ### Why the Kaggle dataset was replaced
 The Kaggle Heart Failure Prediction dataset uses different feature encodings, has 172 zero cholesterol values requiring imputation, and does not include `ca` or `thal`. The four UCI hospital files are from the same original source, consistently formatted, and better documented.
@@ -163,11 +163,11 @@ All three models evaluated on a 20% held-out test split of `heart_combined.csv` 
 
 | Model               | Accuracy | F1    | Precision | Recall | ROC AUC |
 |---------------------|----------|-------|-----------|--------|---------|
-| Logistic Regression | 0.803    | 0.824 | 0.800     | 0.848  | 0.871   |
-| Decision Tree       | 0.803    | 0.818 | 0.818     | 0.818  | 0.802   |
-| Random Forest       | 0.754    | 0.776 | 0.765     | 0.788  | 0.870   |
+| Random Forest       | 0.902    | 0.900 | 0.964     | 0.893  | 0.955   |
+| Logistic Regression | 0.869    | 0.867 | 0.794     | 0.929  | 0.951   |
+| Decision Tree       | 0.787    | 0.844 | 0.712     | 0.714  | 0.808   |
 
-Logistic Regression and Decision Tree tied on accuracy. Random Forest, typically the strongest model, came third — likely due to the small dataset size (303 rows) where simpler models can outperform ensembles that need more data to generalise well. In a medical context **recall** is the most critical metric since a missed disease case is more costly than a false alarm.
+Random Forest is the best performing model on all key metrics. In a medical context **recall** is the most critical metric since a missed disease case is more costly than a false alarm — Logistic Regression leads on recall (92.9%) while Random Forest leads on precision (96.4%).
 
 > Exact values may vary slightly between runs despite the fixed seed, depending on scikit-learn version.
 
