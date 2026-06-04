@@ -2,12 +2,12 @@
 
 A complete machine learning pipeline for heart disease prediction — covering data processing, exploratory data analysis, model training and evaluation, a terminal app, and a Streamlit web interface.
 
-ProjectEC4 extends ProjectEC3 by combining two datasets to increase training data from 1025 to 1220 rows, and includes a dataset quality investigation that informed key feature engineering decisions.
+ProjectEC5 extends ProjectEC4 by adding XGBoost as a fourth model and SHAP explainability to make predictions interpretable. Built on the combined heart disease dataset (303 rows, 13 features).
 
 ## Project Structure
 
 ```
-ProjectEC4/
+ProjectEC5/
 ├── .github/
 │   └── workflows/
 │       └── tests.yml              # CI/CD — runs tests on every push and PR
@@ -54,7 +54,7 @@ ProjectEC4/
 ## Dataset Strategy
 
 ### Why two datasets?
-ProjectEC4 combines the original UCI Heart Disease dataset with the Kaggle Heart Failure Prediction dataset (fedesoriano, 2021) to increase training data from 1025 to 1220 unique rows after deduplication.
+ProjectEC5 combines the original UCI Heart Disease dataset with the Kaggle Heart Failure Prediction dataset (fedesoriano, 2021) to increase training data from 1025 to 1220 unique rows after deduplication.
 
 ### Dataset strategy (`src/data_preparation.py`)
 After a systematic investigation (see below), the Cleveland dataset was chosen as the primary source. It is the only UCI hospital dataset with reliable measurements for all 13 features. The script:
@@ -90,7 +90,7 @@ The Kaggle Heart Failure Prediction dataset uses different feature encodings, ha
 ### First-time setup
 
 ```bash
-# From the project root (ProjectEC4/)
+# From the project root (ProjectEC5/)
 
 # Create venv with Python 3.11 (recommended — matches CI)
 py -3.11 -m venv .venv
@@ -193,7 +193,7 @@ During development a systematic investigation was conducted comparing different 
 
 ## Testing
 
-The project includes **66 tests** with **84% code coverage**.
+The project includes **44 tests** with **84% code coverage**.
 
 ### Run all tests
 
