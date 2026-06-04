@@ -12,7 +12,7 @@ _DEFAULT_DATA_PATH = str(
 )
 
 # Columns that are metadata/flags and should never be used as model features
-_COLUMNS_TO_DROP = ["chol_imputed", "ca", "thal"]
+_COLUMNS_TO_DROP = ["chol_imputed"]
 
 
 class DataProcessor:
@@ -36,7 +36,7 @@ class DataProcessor:
         self.df = self.df.copy()
         self.df.columns = [col.strip().lower() for col in self.df.columns]
 
-        # Drop metadata/flag columns and features not present in all datasets
+        # Drop metadata/flag columns only
         cols_to_drop = [c for c in _COLUMNS_TO_DROP if c in self.df.columns]
         if cols_to_drop:
             self.df = self.df.drop(columns=cols_to_drop)
