@@ -22,6 +22,7 @@ jobs:
           python-version: "3.11"
 
       # Step 3: Install all project dependencies
+      # Includes: scikit-learn, pandas, numpy, streamlit, pytest, pytest-cov
       - name: Install dependencies
         run: pip install -r requirements.txt
 
@@ -31,21 +32,41 @@ jobs:
       - name: Prepare combined dataset
         run: python src/data_preparation.py
 
-      # Step 5: Run the full test suite with coverage reporting
-      # Tests cover the following modules:
-      #   - src/data_preparation.py : dataset combination, imputation, encoding
-      #   - src/data_processing.py  : DataProcessor load, clean, split, correlation
-      #   - src/model_training.py   : ModelTrainer pipelines, train, evaluate, compare, save
-      #   - src/terminal_app.py     : HeartApp init, predict, prompt_for_inputs, run
-      #   - src/main.py             : CLI argument parser, train_and_save, run_app
-      #
-      # Checks enforced:
-      #   --cov-fail-under=84  : total coverage must be at least 84%
-      #   --cov-report=term-missing : prints uncovered line numbers to the log
-      - name: Run tests with coverage
+      # Step 5: Test data preparation module
+      # Tests: dataset combination, text encoding, cholesterol imputation,
+      # zero value handling, deduplication, ca/thal removal
+      - name: Test data preparation
+        run: pytest tests/test_data_preparation.py -v
+
+      # Step 6: Test data processing module
+      # Tests: DataProcessor load, clean, split, summary, correlation matrix
+      # Verifies ca/thal are dropped and default path points to heart_combined.csv
+      - name: Test data processing
+        run: pytest tests/test_data_processing.py -v
+
+      # Step 7: Test model training module
+      # Tests: all three pipelines (LR, RF, DT), evaluate, compare, save_best_model
+      - name: Test model training
+        run: pytest tests/test_model_training.py -v
+
+      # Step 8: Test terminal app
+      # Tests: HeartApp init, predict, prompt_for_inputs, run loop
+      - name: Test terminal app
+        run: pytest tests/test_app.py -v
+
+      # Step 9: Test main CLI
+      # Tests: argument parser, train_and_save, train_and_save_full, run_app
+      - name: Test main CLI
+        run: pytest tests/test_main.py -v
+
+      # Step 10: Full coverage check across all modules
+      # Enforces minimum 84% total coverage
+      # Generates HTML report uploaded as artifact in next step
+      - name: Coverage check
         run: pytest tests/ --cov=src --cov-report=term-missing --cov-report=html --cov-fail-under=84
 
-      # Step 6: Upload the HTML coverage report as a build artifact
+      # Step 11: Upload HTML coverage report as build artifact
+      # Available under Actions run → Artifacts even if tests fail
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v4
