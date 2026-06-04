@@ -37,6 +37,7 @@ models/training_results.json
 out.html
 *.html
 !notebooks/*.html
+data/heart_combined.csv
 
 # OS
 .DS_Store
