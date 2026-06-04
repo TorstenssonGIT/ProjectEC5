@@ -17,6 +17,7 @@ from sklearn.metrics import (
     recall_score,
     roc_auc_score,
 )
+from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
@@ -36,7 +37,7 @@ class ModelResult:
 
 
 class ModelTrainer:
-    """Train and evaluate classification pipelines."""
+    """Train, tune and evaluate classification pipelines."""
 
     def __init__(self, random_state: int = 42) -> None:
         self.random_state = random_state
@@ -81,14 +82,72 @@ class ModelTrainer:
             ),
         }
 
+    def get_param_grids(self) -> Dict[str, Dict]:
+        """Return hyperparameter grids for GridSearchCV tuning."""
+        return {
+            "Logistic Regression": {
+                "model__C": [0.01, 0.1, 1.0, 10.0, 100.0],
+                "model__solver": ["lbfgs", "liblinear"],
+                "model__penalty": ["l2"],
+            },
+            "Random Forest": {
+                "model__n_estimators": [100, 200, 300],
+                "model__max_depth": [None, 5, 10, 15],
+                "model__min_samples_split": [2, 5, 10],
+                "model__max_features": ["sqrt", "log2"],
+            },
+            "Decision Tree": {
+                "model__max_depth": [3, 5, 7, 10, None],
+                "model__min_samples_split": [2, 5, 10],
+                "model__min_samples_leaf": [1, 2, 4],
+                "model__criterion": ["gini", "entropy"],
+            },
+        }
+
     def train_models(
         self, X_train: pd.DataFrame, y_train: pd.Series
     ) -> Dict[str, ModelResult]:
-        """Train all pipelines and store fitted results."""
+        """Train all pipelines with default parameters."""
         pipelines = self.build_pipelines()
         for name, pipeline in pipelines.items():
             pipeline.fit(X_train, y_train)
             self.results[name] = ModelResult(name=name, pipeline=pipeline)
+        return self.results
+
+    def tune_models(
+        self, X_train: pd.DataFrame, y_train: pd.Series, cv: int = 5
+    ) -> Dict[str, ModelResult]:
+        """
+        Tune all models using GridSearchCV with cross-validation.
+        Replaces default pipelines with best found parameters.
+
+        Args:
+            X_train: Training features
+            y_train: Training target
+            cv: Number of cross-validation folds (default 5)
+        """
+        pipelines = self.build_pipelines()
+        param_grids = self.get_param_grids()
+
+        for name, pipeline in pipelines.items():
+            print(f"Tuning {name}...")
+            grid_search = GridSearchCV(
+                pipeline,
+                param_grids[name],
+                cv=cv,
+                scoring="roc_auc",
+                n_jobs=-1,
+                verbose=0,
+            )
+            grid_search.fit(X_train, y_train)
+
+            print(f"  Best params : {grid_search.best_params_}")
+            print(f"  Best CV AUC : {grid_search.best_score_:.4f}")
+
+            self.results[name] = ModelResult(
+                name=name, pipeline=grid_search.best_estimator_
+            )
+
         return self.results
 
     def evaluate(
