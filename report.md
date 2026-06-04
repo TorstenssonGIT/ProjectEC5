@@ -11,7 +11,7 @@ Målvariabeln `target` anger om patienten har hjärtsjukdom (1) eller inte (0).
 
 Källa: UCI Machine Learning Repository — Heart Disease Dataset (Cleveland).
 
-### Utökat dataset (ProjectEC4)
+### Utökat dataset (ProjectEC5)
 För att öka modellernas generaliserbarhet kombinerades det ursprungliga datasetet med
 Kaggle Heart Failure Prediction Dataset (fedesoriano, 2021), som kombinerar fem
 hjärtsjukdomsdataset från Cleveland, Ungern, Schweiz, Long Beach VA och Stalog.
@@ -62,9 +62,9 @@ Hyperparameterval: Random Forest tränas med 200 estimatorer och Decision Tree
 med max djup 10 för att begränsa överpressning. Båda använder `random_state=42`
 för reproducerbarhet.
 
-## 3. Hyperparametertuning (ProjectEC4)
+## 3. Hyperparametertuning (ProjectEC5)
 
-I ProjectEC4 genomfördes systematisk hyperparametertuning med GridSearchCV och 5-faldig
+I ProjectEC5 genomfördes systematisk hyperparametertuning med GridSearchCV och 5-faldig
 korsvalidering. Scoring-mått: **ROC AUC** — robust för obalanserade klasser.
 
 ### Bästa parametrar (GridSearchCV, cv=5)
@@ -129,13 +129,13 @@ kliniskt omdöme och diagnostiska tester.
 
 ## 6. Versionshantering
 
-I ProjectEC4 introducerades Git-taggning som en del av projektets arbetsflöde.
+I ProjectEC5 introducerades Git-taggning som en del av projektets arbetsflöde.
 En tagg sätts på `main` efter att alla tester är gröna och rapporten är uppdaterad,
 och markerar en stabil release av projektet.
 
 ```bash
-git tag -a v4.0 -m "ProjectEC4 - hyperparameter tuning, combined dataset 918 rows"
-git push origin v4.0
+git tag -a v5.0 -m "ProjectEC5 - hyperparameter tuning, combined dataset 918 rows"
+git push origin v5.0
 ```
 
 Taggar syns under **Releases** på GitHub och gör det enkelt att återgå till en specifik version.
