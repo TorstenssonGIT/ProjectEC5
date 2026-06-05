@@ -2,7 +2,10 @@ import json
 from pathlib import Path
 
 import joblib
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
+import shap
 import streamlit as st
 from src.utils import setup_logging
 
@@ -16,6 +19,7 @@ MODEL_OPTIONS = {
     "Logistic Regression": "logistic_regression",
     "Random Forest": "random_forest",
     "Decision Tree": "decision_tree",
+    "XGBoost": "xgboost",
 }
 
 # Features expected by the models (must match training order)
@@ -178,6 +182,7 @@ def show_prediction():
         prediction = model.predict(input_df)[0]
         probability = get_prediction_probability(model, input_df)
         display_prediction_results(prediction, probability)
+        display_shap_explanation(model, input_df, model_label)
 
 
 def get_prediction_probability(model, input_df):
@@ -187,6 +192,51 @@ def get_prediction_probability(model, input_df):
     if hasattr(model, "decision_function"):
         return model.decision_function(input_df)[0]
     return float("nan")
+
+
+def display_shap_explanation(model, input_df: pd.DataFrame, model_label: str) -> None:
+    """Renders a SHAP waterfall plot explaining the prediction."""
+    st.markdown("---")
+    st.subheader("🔍 Prediction Explanation (SHAP)")
+    st.write(
+        "SHAP values show how each feature contributed to this prediction. "
+        "Red bars push toward higher risk, blue bars push toward lower risk."
+    )
+
+    try:
+        # Extract the actual model from the pipeline
+        pipeline_model = model.named_steps["model"]
+
+        # Use TreeExplainer for tree-based models, LinearExplainer for LR
+        if model_label in ["Random Forest", "Decision Tree", "XGBoost"]:
+            explainer = shap.TreeExplainer(pipeline_model)
+            # StandardScaler not used for tree models — use raw input
+            shap_input = input_df
+        else:
+            # Logistic Regression uses StandardScaler — transform first
+            scaler = model.named_steps["scaler"]
+            shap_input = pd.DataFrame(
+                scaler.transform(input_df), columns=input_df.columns
+            )
+            explainer = shap.LinearExplainer(
+                pipeline_model, shap_input, feature_perturbation="interventional"
+            )
+
+        shap_values = explainer(shap_input)
+
+        # For binary classification take class 1 (disease present)
+        if len(shap_values.shape) == 3:
+            sv = shap_values[0, :, 1]
+        else:
+            sv = shap_values[0]
+
+        fig, ax = plt.subplots(figsize=(8, 5))
+        shap.plots.waterfall(sv, max_display=13, show=False)
+        st.pyplot(fig)
+        plt.close(fig)
+
+    except Exception as exc:
+        st.info(f"SHAP explanation not available for this model: {exc}")
 
 
 def display_prediction_results(prediction, probability):
@@ -249,8 +299,9 @@ def show_about():
 
         This application demonstrates a machine learning workflow for predicting heart disease using a clinical dataset.
 
-        - **Models:** Logistic Regression, Random Forest, Decision Tree
-        - **Dataset:** UCI Heart Disease dataset
+        - **Models:** Logistic Regression, Random Forest, Decision Tree, XGBoost
+        - **Explainability:** SHAP values — shows why each prediction was made
+        - **Dataset:** UCI Heart Disease dataset (Cleveland, 303 rows, 13 features)
         - **Goal:** Evaluate risk and explain how predictions are produced
 
         ### Important notes

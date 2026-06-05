@@ -21,6 +21,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
+from xgboost import XGBClassifier
 
 
 @dataclass
@@ -80,6 +81,19 @@ class ModelTrainer:
                     )
                 ]
             ),
+            "XGBoost": Pipeline(
+                [
+                    (
+                        "model",
+                        XGBClassifier(
+                            n_estimators=200,
+                            random_state=self.random_state,
+                            eval_metric="logloss",
+                            verbosity=0,
+                        ),
+                    )
+                ]
+            ),
         }
 
     def get_param_grids(self) -> Dict[str, Dict]:
@@ -101,6 +115,13 @@ class ModelTrainer:
                 "model__min_samples_split": [2, 5, 10],
                 "model__min_samples_leaf": [1, 2, 4],
                 "model__criterion": ["gini", "entropy"],
+            },
+            "XGBoost": {
+                "model__n_estimators": [100, 200, 300],
+                "model__max_depth": [3, 5, 7],
+                "model__learning_rate": [0.01, 0.1, 0.2],
+                "model__subsample": [0.8, 1.0],
+                "model__colsample_bytree": [0.8, 1.0],
             },
         }
 
