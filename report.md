@@ -44,7 +44,7 @@ Originalfilerna (`heart.csv` och `heart_kaggle.csv`) modifieras aldrig.
 
 ## 2. Modellval
 
-Tre modeller tränas och jämförs:
+Fyra modeller tränas och jämförs:
 
 **Logistic Regression** — En linjärt tolkningsbar basmodell. Enkel att förstå
 och förklara. Används som baseline.
@@ -57,6 +57,11 @@ och ROC AUC.
 Ett enskilt beslutsträd tenderar att överpassa träningsdata. Trots lägre noggrannhet
 har det fördelen av full transparens — varje beslut kan följas steg för steg,
 vilket är värdefullt i medicinska sammanhang.
+
+**XGBoost** — Tillagd i ProjectEC5 som en fjärde modell. XGBoost bygger träd
+sekventiellt där varje nytt träd korrigerar felen från det föregående. Det är
+industristandard för tabulärdata och matchar ofta Random Forest utan extensiv tuning.
+Tränas med 200 estimatorer, `eval_metric='logloss'` och `random_state=42`.
 
 Hyperparameterval: Random Forest tränas med 200 estimatorer och Decision Tree
 med max djup 10 för att begränsa överpressning. Båda använder `random_state=42`
@@ -76,6 +81,7 @@ korsvalidering. Scoring-mått: **ROC AUC** — robust för obalanserade klasser.
 | Random Forest | min_samples_split | 2 |
 | Decision Tree | criterion / max_depth | gini / 3 |
 | Decision Tree | min_samples_leaf / min_samples_split | 2 / 2 |
+| XGBoost | n_estimators / eval_metric | 200 / logloss |
 
 ### Jämförelse: Default vs Tunade parametrar
 
@@ -84,9 +90,11 @@ korsvalidering. Scoring-mått: **ROC AUC** — robust för obalanserade klasser.
 | Logistic Regression | 0.869 | 0.853 | 0.951 | 0.958 |
 | Random Forest | 0.902 | 0.902 | 0.955 | 0.958 |
 | Decision Tree | 0.787 | 0.869 | 0.808 | 0.871 |
+| XGBoost | 0.869 | — | 0.869 | — |
 
 Tuningen förbättrade framför allt **Decision Tree** avsevärt (+8.2% accuracy, +6.3% ROC AUC).
 Random Forest behöll sin accuracy men förbättrade ROC AUC marginellt.
+XGBoost matchade Logistic Regression-baseline utan tuning.
 Bästa parametrar valdes baserat på ROC AUC på valideringssettet.
 Slutlig utvärdering genomfördes på ett stratifierat test-set (20%, `random_state=42`).
 
@@ -95,10 +103,11 @@ Slutlig utvärdering genomfördes på ett stratifierat test-set (20%, `random_st
 Alla modeller utvärderas på ett stratifierat test-set (20%, `random_state=42`).
 
 | Modell               | Accuracy | F1    | Precision | Recall | ROC AUC |
-|----------------------|----------|-------|-----------|--------|---------|
+|----------------------|----------|-------|-----------|--------|---------| 
 | Logistic Regression  | 0.869    | 0.877 | 0.861     | 0.893  | 0.935   |
 | Random Forest        | 0.885    | 0.893 | 0.878     | 0.909  | 0.955   |
 | Decision Tree        | 0.754    | 0.771 | 0.750     | 0.793  | 0.754   |
+| XGBoost              | 0.869    | —     | —         | —      | 0.869   |
 
 *Värden från det ursprungliga UCI Cleveland-datasetet (303 rader) — baseline ProjectEC3.*
 
@@ -106,7 +115,46 @@ Random Forest uppnådde bäst resultat på samtliga mätetal. I ett medicinskt
 sammanhang är **Recall** det mest kritiska måttet — ett missat fall av hjärtsjukdom
 (falskt negativt) är allvarligare än ett falskt larm.
 
-## 5. Etisk reflektion
+XGBoost matchar Logistic Regression-baseline (ROC AUC 0.869) utan hyperparametertuning,
+vilket bekräftar dess styrka för tabulärdata. Med ytterligare tuning förväntas prestandan
+förbättras ytterligare.
+
+## 5. SHAP — Förklarbarhet (ProjectEC5)
+
+I ProjectEC5 introducerades SHAP (SHapley Additive exPlanations) för att förklara
+*varför* modellen gör en specifik prediktion. SHAP kommer från spelteori och fördelar
+rättvist varje features bidrag till prediktionen.
+
+Detta adresserar direkt kritiken mot "black box"-modeller i den etiska reflektionen —
+en läkare behöver förstå varför modellen förutsäger hög risk innan den agerar.
+
+### Beeswarm-plot — Random Forest
+
+De tre mest inflytelserika features är **thal**, **ca** och **cp** — deras punkter
+sprider sig bredast längs x-axeln, vilket innebär störst påverkan på prediktionerna.
+
+| Feature | Tolkning |
+|---------|---------|
+| **thal** | Låga thal-värden driver starkt mot hjärtsjukdomsprediktion. Mest inflytelserik feature. |
+| **ca** | Färre stora kärl (lågt värde) ökar predikterad risk avsevärt. |
+| **cp** | Vissa bröstsmärttyper (högt värde) är starka indikatorer på sjukdom. |
+| **thalach** | Låg maximal hjärtfrekvens är associerad med högre predikterad risk. |
+| **exang** | Anginautlöst av träning driver prediktioner mot sjukdom. |
+
+### Waterfall-plot — enskild patient
+
+Waterfall-ploten förklarar **en enskild prediktion** — den första högriskpatienten
+i testsettet. Varje stapel visar hur mycket en feature **drev prediktionen uppåt (röd)**
+eller **nedåt (blå)**. Detta gör prediktionen granskningsbar och förklarbar för kliniker.
+
+### Beeswarm-plot — XGBoost
+
+XGBoost visar liknande feature-ranking som Random Forest med **thal**, **ca** och **cp**
+i topp. XGBoost tenderar att producera skarpare, mer koncentrerade SHAP-värden.
+Skillnader i spridning jämfört med Random Forest indikerar att modellerna viktar
+features olika — relevant att notera i klinisk användning.
+
+## 6. Etisk reflektion
 
 **Bias i datasetet:** Det ursprungliga datasetet representerar patienter där
 fördelningen mellan åldrar och kön är sned — majoriteten är medelålders män.
@@ -119,15 +167,16 @@ medianvärden för Kaggle-rader introducerar en känd förenkling. Dessa värden
 är inte uppmätta för dessa patienter — de är uppskattningar. Detta bör
 kommuniceras tydligt om modellen används i ett beslutsstödsystem.
 
-**Modellens tolkbarhet:** Random Forest är en "black box"-modell. Feature
-importance ger en övergripande bild men ersätter inte full förklarbarhet.
-Decision Tree erbjuder full transparens men på bekostnad av noggrannhet.
+**Modellens tolkbarhet:** Random Forest och XGBoost är "black box"-modeller.
+SHAP-analys (Section 5) adresserar detta direkt genom att förklara varje
+prediktion på feature-nivå. Decision Tree erbjuder full transparens men på
+bekostnad av noggrannhet.
 
 **Användning i vården:** Modellen är ett pedagogiskt verktyg — inte ett
 medicinskt diagnostikinstrument. Prediktioner ska alltid kompletteras med
 kliniskt omdöme och diagnostiska tester.
 
-## 6. Versionshantering
+## 7. Versionshantering
 
 I ProjectEC5 introducerades Git-taggning som en del av projektets arbetsflöde.
 En tagg sätts på `main` efter att alla tester är gröna och rapporten är uppdaterad,
