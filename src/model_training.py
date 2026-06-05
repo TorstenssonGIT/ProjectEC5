@@ -102,7 +102,6 @@ class ModelTrainer:
             "Logistic Regression": {
                 "model__C": [0.01, 0.1, 1.0, 10.0, 100.0],
                 "model__solver": ["lbfgs", "liblinear"],
-                "model__penalty": ["l2"],
             },
             "Random Forest": {
                 "model__n_estimators": [100, 200, 300],
