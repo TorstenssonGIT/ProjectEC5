@@ -230,8 +230,9 @@ flake8 src/ --max-line-length=100
 
 ## CI/CD (GitHub Actions)
 
-The workflow at `.github/workflows/tests.yml` runs automatically on every push and pull request. It:
+ProjectEC5 uses two separate workflows for fast feedback and thorough PR gates:
 
+### `tests.yml` — runs on every push
 - Sets up Python 3.11
 - Installs all dependencies
 - Runs `data_preparation.py` to generate `heart_combined.csv`
@@ -239,10 +240,26 @@ The workflow at `.github/workflows/tests.yml` runs automatically on every push a
 - Enforces a minimum of 84% total coverage
 - Uploads the HTML coverage report as a build artifact
 
+### `pr_checks.yml` — runs on every pull request
+Everything in `tests.yml` plus:
+- **flake8** — PEP8 code style check (`--max-line-length=100`)
+- **bandit** — security scan (medium and high severity)
+- **mypy** — type checking (`--ignore-missing-imports`)
+
 To run the same checks locally:
 
 ```bash
+# Tests and coverage
 pytest tests/ --cov=src --cov-report=term-missing --cov-fail-under=84
+
+# Code style
+flake8 src/ --max-line-length=100
+
+# Security scan
+bandit -r src/ -ll
+
+# Type check
+mypy src/ --ignore-missing-imports
 ```
 
 ## Ethical Considerations
