@@ -8,3 +8,5 @@ streamlit>=1.26
 notebook>=7.0
 pytest>=7.4
 pytest-cov>=4.1
+xgboost>=2.0
+shap>=0.44

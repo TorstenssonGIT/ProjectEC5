@@ -31,7 +31,8 @@ class TestModelTrainer:
         assert 'Logistic Regression' in pipelines
         assert 'Random Forest' in pipelines
         assert 'Decision Tree' in pipelines
-        assert len(pipelines) == 3
+        assert 'XGBoost' in pipelines
+        assert len(pipelines) == 4
 
         for name, pipeline in pipelines.items():
             assert hasattr(pipeline, 'fit')
@@ -57,10 +58,12 @@ class TestModelTrainer:
         assert 'Logistic Regression' in grids
         assert 'Random Forest' in grids
         assert 'Decision Tree' in grids
+        assert 'XGBoost' in grids
 
         assert 'model__C' in grids['Logistic Regression']
         assert 'model__n_estimators' in grids['Random Forest']
         assert 'model__max_depth' in grids['Decision Tree']
+        assert 'model__n_estimators' in grids['XGBoost']
 
     def test_train_models(self) -> None:
         """Test training models."""
@@ -71,10 +74,11 @@ class TestModelTrainer:
         trainer = ModelTrainer(random_state=42)
         results = trainer.train_models(X_train, y_train)
 
-        assert len(results) == 3
+        assert len(results) == 4
         assert 'Logistic Regression' in results
         assert 'Random Forest' in results
         assert 'Decision Tree' in results
+        assert 'XGBoost' in results
 
         for name, result in results.items():
             assert isinstance(result, ModelResult)
@@ -90,7 +94,7 @@ class TestModelTrainer:
         trainer = ModelTrainer(random_state=42)
         results = trainer.tune_models(X_train, y_train, cv=3)
 
-        assert len(results) == 3
+        assert len(results) == 4
         for name, result in results.items():
             assert isinstance(result, ModelResult)
             assert hasattr(result.pipeline, 'predict')
@@ -165,7 +169,7 @@ class TestModelTrainer:
         comparison = trainer.compare()
 
         assert isinstance(comparison, pd.DataFrame)
-        assert len(comparison) == 3
+        assert len(comparison) == 4
         assert 'model' in comparison.columns
         assert 'accuracy' in comparison.columns
         assert 'f1_score' in comparison.columns
@@ -190,7 +194,7 @@ class TestModelTrainer:
         best_name = trainer.save_best_model(temp_model_output)
 
         assert isinstance(best_name, str)
-        assert best_name in ['Logistic Regression', 'Random Forest', 'Decision Tree']
+        assert best_name in ['Logistic Regression', 'Random Forest', 'Decision Tree', 'XGBoost']
         assert os.path.isfile(temp_model_output)
 
     def test_save_best_model_no_training(self, temp_model_output: str) -> None:
