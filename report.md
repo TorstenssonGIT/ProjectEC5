@@ -134,12 +134,22 @@ En tagg sätts på `main` efter att alla tester är gröna och rapporten är upp
 och markerar en stabil release av projektet.
 
 ```bash
-git tag -a v5.0 -m "ProjectEC5 - hyperparameter tuning, combined dataset 918 rows"
+git tag -a v5.0 -m "ProjectEC5 - XGBoost, SHAP explainability, combined dataset 918 rows"
 git push origin v5.0
 ```
 
 Taggar syns under **Releases** på GitHub och gör det enkelt att återgå till en specifik version.
 
-CI/CD-workflödet uppgraderades även till **Node.js 24** för GitHub Actions
-(`FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true`) inför Githubs deadline den 16 juni 2026,
-då Node.js 20 fasas ut från runners.
+### CI/CD-strategi (ProjectEC5)
+
+I ProjectEC5 delades CI/CD upp i två separata workflows:
+
+**`tests.yml`** — körs vid varje push. Snabb återkoppling med fullständig testsvit och täckningskontroll (min 84%).
+
+**`pr_checks.yml`** — körs vid varje pull request. Innehåller allt i tests.yml plus:
+- **flake8** — kodstilskontroll enligt PEP8
+- **bandit** — säkerhetsskanning (medium och hög allvarlighetsgrad)
+- **mypy** — typhintskontroll
+
+CI/CD-workflödet använder **Node.js 24** för GitHub Actions
+(`FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true`) inför Githubs deadline den 16 juni 2026.
