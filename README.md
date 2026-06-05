@@ -1,4 +1,4 @@
-# Heart Disease Prediction Project (EC4)
+# Heart Disease Prediction Project (EC5)
 
 A complete machine learning pipeline for heart disease prediction — covering data processing, exploratory data analysis, model training and evaluation, a terminal app, and a Streamlit web interface.
 
