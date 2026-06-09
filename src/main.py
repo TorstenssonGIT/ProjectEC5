@@ -146,12 +146,12 @@ def configure_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--model-path",
-        default="models/heart_model.joblib",
+        default=str(PROJECT_ROOT / "models" / "heart_model.joblib"),
         help="Path to save or load the trained model",
     )
     parser.add_argument(
         "--data-path",
-        default="data/heart.csv",
+        default=str(PROJECT_ROOT / "data" / "heart_combined.csv"),
         help="Path to the heart disease dataset CSV file",
     )
     return parser

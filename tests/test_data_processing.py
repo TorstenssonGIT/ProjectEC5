@@ -136,7 +136,9 @@ class TestDataProcessor:
 
     def test_load_real_heart_dataset(self) -> None:
         """Test loading the prepared heart dataset."""
-        processor = DataProcessor("data/heart_combined.csv")
+        from pathlib import Path
+        data_path = str(Path(__file__).resolve().parent.parent / "data" / "heart_combined.csv")
+        processor = DataProcessor(data_path)
         df = processor.load_data()
 
         assert not df.empty

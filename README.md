@@ -1,8 +1,19 @@
-# Heart Disease Prediction Project (EC5)
+# Heart Disease Prediction Project (EC5.1)
 
 A complete machine learning pipeline for heart disease prediction — covering data processing, exploratory data analysis, model training and evaluation, a terminal app, and a Streamlit web interface.
 
-ProjectEC5 extends ProjectEC4 by adding XGBoost as a fourth model and SHAP explainability to make predictions interpretable. Built on the combined heart disease dataset (303 rows, 13 features).
+**ProjectEC5.1** is a patch release that fixes the following issues found in EC5:
+
+| Issue | Fix |
+|-------|-----|
+| Section numbering broken | Sections now run 1–15 sequentially |
+| `pr_checks.yml` missing | Added — flake8, bandit, mypy on every PR |
+| Test count regression (44 → 66) | Restored to 66 tests matching EC4 |
+| Node.js 20 deprecation | Both workflows upgraded to Node.js 24 |
+| Summary table incomplete | Updated to reflect all EC5 features |
+| Ethical reflection outdated | Updated to mention XGBoost and SHAP |
+
+ProjectEC5 extended ProjectEC4 by adding XGBoost as a fourth model and SHAP explainability. Built on the Cleveland dataset (303 rows, 13 features).
 
 ## Project Structure
 
@@ -10,7 +21,8 @@ ProjectEC5 extends ProjectEC4 by adding XGBoost as a fourth model and SHAP expla
 ProjectEC5/
 ├── .github/
 │   └── workflows/
-│       └── tests.yml              # CI/CD — runs tests on every push and PR
+│       ├── tests.yml              # CI/CD — runs on every push
+│       └── pr_checks.yml          # PR gates — flake8, bandit, mypy (added EC5.1)
 ├── .streamlit/
 │   └── config.toml                # Streamlit dark theme configuration
 ├── data/
@@ -26,13 +38,13 @@ ProjectEC5/
 │   ├── decision_tree.pkl
 │   └── training_results.json
 ├── notebooks/
-│   └── analysis.ipynb             # Full EDA, training, results, terminal app & Streamlit demo
+│   └── analysis.ipynb             # Full EDA, training, XGBoost, SHAP, Streamlit demo
 ├── scripts/
 │   └── investigate_datasets.py    # Dataset quality investigation script
 ├── src/
-│   ├── data_preparation.py        # Combines heart.csv + heart_kaggle.csv
+│   ├── data_preparation.py        # Prepares Cleveland dataset → heart_combined.csv
 │   ├── data_processing.py         # DataProcessor class
-│   ├── model_training.py          # ModelTrainer class (3 models)
+│   ├── model_training.py          # ModelTrainer class (LR, RF, DT + GridSearchCV tuning)
 │   ├── terminal_app.py            # Terminal prediction app (HeartApp)
 │   ├── utils.py                   # Logging helpers
 │   └── main.py                    # CLI entry point
@@ -53,18 +65,8 @@ ProjectEC5/
 
 ## Dataset Strategy
 
-### Why two datasets?
-ProjectEC5 combines the original UCI Heart Disease dataset with the Kaggle Heart Failure Prediction dataset (fedesoriano, 2021) to increase training data from 1025 to 1220 unique rows after deduplication.
-
-### Dataset strategy (`src/data_preparation.py`)
-After a systematic investigation (see below), the Cleveland dataset was chosen as the primary source. It is the only UCI hospital dataset with reliable measurements for all 13 features. The script:
-1. Loads `processed.cleveland.data`
-2. Converts target to binary (0 = no disease, 1+ = disease present)
-3. Imputes 6 missing values in `ca` and `thal` with column medians
-4. Saves to `heart_combined.csv` (used by DataProcessor by default)
-
-### Why ca and thal were dropped
-During investigation (`scripts/investigate_datasets.py`) it was found that `ca` (number of major vessels) and `thal` (thalassemia type) are the **two most important features** (~28% combined importance). However inspection of the four UCI hospital files revealed that only Cleveland has reliable measurements:
+### Why Cleveland only?
+After a systematic investigation (`scripts/investigate_datasets.py`), the Cleveland dataset was chosen as the primary source. It is the only UCI hospital dataset with reliable measurements for all 13 features including `ca` and `thal` — the two most important predictive features (~28% combined importance).
 
 | Dataset | ca missing | thal missing | Rows |
 |---------|-----------|-------------|------|
@@ -73,210 +75,202 @@ During investigation (`scripts/investigate_datasets.py`) it was found that `ca` 
 | Switzerland | 118 | 52 | 123 |
 | VA Long Beach | 198 | 166 | 200 |
 
-Imputing `ca` and `thal` for 90%+ of rows in three datasets was shown to severely degrade accuracy (from ~88% to ~64%). Dropping them gives honest data from all 918 rows across four hospitals.
+Imputing `ca` and `thal` for 90%+ of rows in three datasets degraded accuracy from ~88% to ~64%. Cleveland only with all 13 features gives the best results.
 
 | Approach | Random Forest Accuracy |
 |----------|----------------------|
-| Original UCI Cleveland only (302 rows, 13 features) | ~88% |
-| Combined with imputed ca/thal (1220 rows, 13 features) | ~64% |
-| Four UCI hospitals without ca/thal (918 rows, 11 features) | ~67% |
-| Cleveland only with all 13 features (303 rows) | 0.902 RF ← selected |
-
-### Why the Kaggle dataset was replaced
-The Kaggle Heart Failure Prediction dataset uses different feature encodings, has 172 zero cholesterol values requiring imputation, and does not include `ca` or `thal`. The four UCI hospital files are from the same original source, consistently formatted, and better documented.
+| Original UCI (with duplicates) | 1.000 — overfitting |
+| Original UCI (deduplicated) | ~0.885 |
+| Combined with imputed ca/thal | ~0.643 |
+| Combined without ca/thal | 0.672 |
+| Cleveland only, 13 features | **0.902 ← selected** |
 
 ## Setup
 
-### First-time setup
-
 ```bash
 # From the project root (ProjectEC5/)
-
-# Create venv with Python 3.11 (recommended — matches CI)
 py -3.11 -m venv .venv
 
-# Activate
 # Windows:
 .venv\Scripts\Activate.ps1
 # macOS / Linux:
 source .venv/bin/activate
 
-# Install dependencies
 pip install -r requirements.txt
 ```
 
-> If you need to recreate the venv: `rm -rf .venv` then repeat above.
-
 ## Running the Project
 
-### Step 1 — Prepare the combined dataset
-
+### Step 1 — Prepare the dataset
 ```bash
-python src/data_preparation.py
+py -m src.data_preparation
 ```
 
-Combines `heart.csv` and `heart_kaggle.csv` into `heart_combined.csv`. Safe to re-run — always regenerates from source files. Original files are never modified.
-
-### Step 2 — Train all three models
-
+### Step 2 — Train all models
 ```bash
-python src/main.py --train
+py -m src.main --train
 ```
 
-Trains Logistic Regression, Random Forest, and Decision Tree on `heart_combined.csv`, prints a comparison table, and saves model files to `models/`.
-
-### Train a final model on the full dataset
-
+### Step 3 — Terminal prediction app
 ```bash
-python src/main.py --train-full --model-path models/heart_model_full.joblib
+py -m src.main --app
 ```
 
-### Run the terminal prediction app
-
+### Step 4 — Streamlit web app
 ```bash
-python src/main.py --app
+py -m src.main --streamlit
 ```
-
-Launches `HeartApp` which prompts you to enter values for all 11 clinical features one by one, then returns a risk prediction and confidence score.
-
-### Run the Streamlit web app
-
-```bash
-python src/main.py --streamlit
-```
-
-Opens the browser at `http://localhost:8501`. The dark theme is applied automatically from `.streamlit/config.toml`.
-
-> **Note:** Models must be trained before launching the Streamlit app.
 
 ### Run everything from the notebook
-
 ```bash
 jupyter notebook notebooks/analysis.ipynb
 ```
 
-The notebook runs `data_preparation.py` automatically in Section 2, then covers EDA, training, evaluation, terminal app demonstration, and launches Streamlit inline.
+## Model Results — Evolution from EC3 to EC5
 
-## Model Results
+### EC3 — baseline (1025 rows, with duplicates)
+| Model | Accuracy | ROC AUC | Note |
+|-------|----------|---------|------|
+| Random Forest | 0.885 | 0.955 | ⚠️ Inflated — 723 duplicate rows |
+| Logistic Regression | 0.869 | 0.935 | ⚠️ Inflated |
+| Decision Tree | 0.754 | 0.754 | ⚠️ Inflated |
 
-All three models evaluated on a 20% held-out test split of `heart_combined.csv` — Cleveland dataset, 303 rows, 13 features (stratified, `random_state=42`).
+### EC4 — goal: add Kaggle dataset as new data source → finding: more data did not help
 
-| Model               | Accuracy | F1    | Precision | Recall | ROC AUC |
-|---------------------|----------|-------|-----------|--------|---------|
-| Random Forest       | 0.902    | 0.900 | 0.964     | 0.893  | 0.955   |
-| Logistic Regression | 0.869    | 0.867 | 0.794     | 0.929  | 0.951   |
-| Decision Tree       | 0.787    | 0.844 | 0.712     | 0.714  | 0.808   |
+| Approach | Rows | Features | RF Accuracy | Conclusion |
+|----------|------|----------|------------|------------|
+| EC3 original (with duplicates) | 1025 | 13 | 1.000 | ❌ Overfitting — data leakage |
+| EC3 deduplicated | 302 | 13 | ~0.885 | Honest baseline |
+| UCI 4 hospitals — drop ca + thal | 918 | 11 | ~0.672 | ❌ Feature loss too costly |
+| Kaggle combined — impute ca + thal | 1220 | 13 | ~0.643 | ❌ Imputing 90%+ rows unreliable |
+| **Cleveland only — all 13 features** | **303** | **13** | **0.902** | ✅ Selected |
 
-Random Forest is the best performing model on all key metrics. In a medical context **recall** is the most critical metric since a missed disease case is more costly than a false alarm — Logistic Regression leads on recall (92.9%) while Random Forest leads on precision (96.4%).
+`ca` and `thal` are the two most important features (~28% combined importance). The Kaggle dataset
+does not include them — adding it requires dropping or imputing these features. Both options degrade
+accuracy more than the extra rows help. **Data quality beats data quantity.**
 
-> Exact values may vary slightly between runs despite the fixed seed, depending on scikit-learn version.
+### EC4 — after deduplication + hyperparameter tuning (303 rows, 13 features)
+| Model | Default Acc | Tuned Acc | Default AUC | Tuned AUC |
+|-------|------------|-----------|-------------|-----------|
+| Random Forest | 0.902 | 0.902 | 0.955 | 0.958 |
+| Logistic Regression | 0.869 | 0.853 | 0.951 | 0.958 |
+| Decision Tree | 0.787 | **0.869** | 0.808 | **0.871** |
 
-### Investigation Findings
+Decision Tree was the biggest winner from tuning (+8.2% accuracy).
 
-During development a systematic investigation was conducted comparing different dataset combinations. Key findings:
+### EC5 — with XGBoost (303 rows, 13 features, actual results)
+| Model | Accuracy | F1 | Precision | Recall | ROC AUC |
+|-------|----------|----|-----------|--------|---------|
+| Random Forest | 0.9016 | 0.9000 | 0.8438 | **0.9643** | 0.9545 |
+| Logistic Regression | 0.8689 | 0.8667 | 0.8125 | 0.9286 | 0.9513 |
+| XGBoost | 0.8689 | 0.8667 | 0.8125 | 0.9286 | 0.9102 |
+| Decision Tree | 0.7869 | 0.7937 | 0.7143 | 0.8929 | 0.8084 |
+| Decision Tree (tuned) | **0.869** | — | — | — | **0.871** |
 
-| Dataset | Rows | Features | Random Forest Accuracy |
-|---------|------|----------|----------------------|
-| Original UCI (with duplicates) | 1025 | 13 | 1.000 — overfitting |
-| Original UCI (deduplicated) | 302 | 13 | ~0.885 |
-| Combined with imputed ca/thal | 1220 | 13 | ~0.643 |
-| Combined without ca/thal | 1220 | 11 | 0.672 |
+Random Forest is the best model. In a medical context **Recall** is the most critical metric — Random Forest leads at 96.4%. XGBoost matches Logistic Regression baseline without tuning.
 
-**Conclusions:**
-- The original `heart.csv` contained 723 duplicate rows — cleaned to 302 unique rows
-- `ca` and `thal` are the two most important features (~28% combined importance) but are absent from the Kaggle dataset
-- Imputing them with median values caused accuracy to drop to ~64% — confirming imputation was unreliable
-- Dropping them and using the combined 1220-row dataset recovers to ~67-70%
-- The accuracy gap vs the original 13-feature dataset reflects the genuine information loss from dropping two clinically significant features
+### Evolution Summary — Conclusions
 
-> Investigation script: `scripts/investigate_datasets.py`
+| Version | Goal | Key finding | Conclusion |
+|---------|------|-------------|------------|
+| **EC3** | Build baseline pipeline | Results looked strong (RF 0.885) | ⚠️ Later found to be inflated by 723 duplicate rows |
+| **EC4** | Add Kaggle as new data source | More data degraded accuracy from 0.885 → 0.643 | Data quality beats data quantity — Cleveland only wins |
+| **EC4** | Understand why more data hurt | `ca` + `thal` missing from Kaggle (~28% importance) | Dropping/imputing key features costs more than extra rows gain |
+| **EC4** | Tune models on best dataset | Decision Tree biggest winner (+8.2%) | GridSearchCV with cv=5 recovers weak models |
+| **EC5** | Add XGBoost on validated dataset | Matches LR baseline without tuning | Confirms dataset quality — strong models need good data first |
+| **EC5** | Explain predictions (address ethics) | SHAP confirms `thal`, `ca`, `cp` are top features | Findings from EC4 investigation validated by explainability |
+
+**The evolving system:** EC3 built the foundation. EC4 proved that engineering rigour matters more
+than adding data — the investigation, deduplication and dataset justification turned a flawed 0.885
+into an honest 0.902. EC5 built on that solid foundation to add a competitive 4th model and
+explainability that validates every previous decision.
+
+### Hyperparameter Tuning Results
+
+| Model | Default Acc | Tuned Acc | Default ROC AUC | Tuned ROC AUC |
+|-------|-------------|-----------|-----------------|---------------|
+| Logistic Regression | 0.869 | 0.853 | 0.951 | 0.958 |
+| Random Forest | 0.902 | 0.902 | 0.955 | 0.958 |
+| Decision Tree | 0.787 | 0.869 | 0.808 | 0.871 |
+
+Decision Tree improved most significantly (+8.2% accuracy, +6.3% ROC AUC) through tuning.
+
+## SHAP — Explainability
+
+ProjectEC5 added SHAP (SHapley Additive exPlanations) to explain model predictions:
+
+| Feature | SHAP finding |
+|---------|-------------|
+| **thal** | Most influential — low values strongly predict disease |
+| **ca** | Fewer major vessels = higher risk |
+| **cp** | Chest pain type = strong disease indicator |
+| **thalach** | Low max heart rate = higher predicted risk |
+| **exang** | Exercise-induced angina = pushes toward disease |
+
+See Section 10 of the notebook for beeswarm and waterfall plots.
 
 ## Testing
 
-The project includes **44 tests** with **84% code coverage**.
-
-### Run all tests
+The project includes **66 tests** with **84% code coverage**.
 
 ```bash
 pytest tests/ -v
-```
-
-### Generate HTML coverage report
-
-```bash
 pytest tests/ --cov=src --cov-report=html
-# Open htmlcov/index.html in a browser
 ```
 
 ### Coverage by module
 
-| Module                      | Coverage |
-|-----------------------------|----------|
-| `src/data_preparation.py`   | 99%      |
-| `src/terminal_app.py`       | 100%     |
-| `src/model_training.py`     | 98%      |
-| `src/data_processing.py`    | 89%      |
-| `src/main.py`               | 75%      |
-| `src/utils.py`              | 0%       |
-
-## Code Quality
-
-The project follows PEP8 standards. To check:
-
-```bash
-pip install flake8
-flake8 src/ --max-line-length=100
-```
+| Module | Coverage |
+|--------|----------|
+| `src/terminal_app.py` | 100% |
+| `src/model_training.py` | 98% |
+| `src/data_preparation.py` | 99% |
+| `src/data_processing.py` | 89% |
+| `src/main.py` | 75% |
+| `src/utils.py` | 0% |
 
 ## CI/CD (GitHub Actions)
 
-ProjectEC5 uses two separate workflows for fast feedback and thorough PR gates:
+ProjectEC5.1 uses two separate workflows:
 
-### `tests.yml` — runs on every push
-- Sets up Python 3.11
-- Installs all dependencies
-- Runs `data_preparation.py` to generate `heart_combined.csv`
-- Runs the full test suite with coverage
-- Enforces a minimum of 84% total coverage
-- Uploads the HTML coverage report as a build artifact
+### `tests.yml` — every push
+- Python 3.11, Node.js 24
+- Installs dependencies + prepares dataset
+- Runs full 66-test suite
+- Enforces minimum 84% coverage
+- Uploads HTML coverage report
 
-### `pr_checks.yml` — runs on every pull request
+### `pr_checks.yml` — every pull request
 Everything in `tests.yml` plus:
-- **flake8** — PEP8 code style check (`--max-line-length=100`)
-- **bandit** — security scan (medium and high severity)
+- **flake8** — PEP8 code style (`--max-line-length=100`)
+- **bandit** — security scan (medium + high severity)
 - **mypy** — type checking (`--ignore-missing-imports`)
 
-To run the same checks locally:
-
 ```bash
-# Tests and coverage
+# Run all checks locally
 pytest tests/ --cov=src --cov-report=term-missing --cov-fail-under=84
-
-# Code style
 flake8 src/ --max-line-length=100
-
-# Security scan
 bandit -r src/ -ll
-
-# Type check
 mypy src/ --ignore-missing-imports
 ```
 
+## Version History
+
+| Tag | Description |
+|-----|-------------|
+| v5.1 | EC5.1 — section numbering fixed, pr_checks.yml, Node.js 24, 66 tests |
+| v5.0 | EC5 — XGBoost, SHAP explainability |
+| v4.0 | EC4 — hyperparameter tuning, combined dataset investigation |
+
 ## Ethical Considerations
 
-This project uses the UCI Heart Disease dataset which has known demographic bias — the majority of patients are middle-aged men. The models may perform worse for underrepresented groups such as women and elderly patients.
-
-The decision to drop `ca` and `thal` features is documented transparently. These are clinically significant features but cannot be reliably estimated for the Kaggle patients without actual measurement.
-
-The predictions are for **educational purposes only** and must not be used as a substitute for medical diagnosis. Always consult a healthcare professional.
-
-A full ethical reflection is included in `report.md`.
+- UCI Heart Disease dataset has known demographic bias — majority are middle-aged men
+- SHAP explainability makes predictions auditable for clinical review
+- `ca` and `thal` imputation decisions are documented transparently
+- **Educational purposes only** — not a medical diagnostic tool
 
 ## Notes
-
-- Code style checked with `flake8 src/ --max-line-length=100` — no issues.
-- `notebooks/analysis.ipynb` is the single entry point — run all cells top-to-bottom.
-- The terminal app uses 11 features (ca and thal excluded).
-- The Streamlit app uses a dark theme configured in `.streamlit/config.toml`.
-- `heart.zip` contains the original dataset archive for reference.
-- This application is for **educational purposes only** and is not a medical diagnostic tool.
+- `notebooks/analysis.ipynb` is the single entry point — run all cells top-to-bottom
+- Sections 1–15 run sequentially with no numbering gaps
+- Node.js 24 used in CI/CD ahead of GitHub's Node.js 20 deprecation (16 June 2026)
+- This application is for **educational purposes only** and is not a medical diagnostic tool

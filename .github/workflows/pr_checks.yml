@@ -37,7 +37,7 @@ jobs:
       # Prepares the Cleveland dataset and saves to heart_combined.csv
       # Must run before tests so the combined dataset exists
       - name: Prepare combined dataset
-        run: python src/data_preparation.py
+        run: python -m src.data_preparation
 
       # Step 6: Test data preparation module
       # Tests: dataset combination, text encoding, cholesterol imputation,
