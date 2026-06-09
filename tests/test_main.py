@@ -55,12 +55,13 @@ class TestArgumentParser:
         assert args.model_path == 'custom_model.joblib'
 
     def test_parser_default_paths(self) -> None:
-        """Test default paths."""
+        """Test default paths are absolute and point to correct files."""
         parser = configure_arg_parser()
         args = parser.parse_args([])
 
-        assert args.data_path == 'data/heart.csv'
-        assert args.model_path == 'models/heart_model.joblib'
+        # Defaults are now absolute paths anchored to PROJECT_ROOT
+        assert 'heart_combined.csv' in args.data_path
+        assert 'heart_model.joblib' in args.model_path
         assert args.train_full is False
 
     def test_parser_all_arguments(self) -> None:
